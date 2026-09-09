@@ -22,6 +22,10 @@
 - Deployment configuration 與 Credential 分離。
 - rollback 使用前一個已核准 digest。
 
+### Release gate
+
+`.github/workflows/release.yml` 以 main branch 的 CI 完成事件作為觸發點，並在建立版本前再次確認同一 commit 的 Security workflow 已成功。只有兩個 gate 都成功時，才會依 `VERSION` 建立 `vX.Y.Z` tag 與 GitHub Release。
+
 ### Air-Gapped transfer
 
 離線部署 bundle 應包含 approved image archive、SBOM、checksum、release metadata、deployment configuration template；真實 Credential 由目標環境注入。
@@ -33,5 +37,9 @@
 `Design → Develop → Validate → Security Scan → Package → TEST → Approve → Promote → PROD → Observe → Audit`
 
 DEV may produce candidate artifacts. TEST consumes immutable CI-produced artifacts. PROD promotes the exact digest validated in TEST. Production rebuilds are prohibited; rollback selects a previously approved digest.
+
+### Release gate
+
+`.github/workflows/release.yml` is triggered by completion of CI on main and verifies that the Security workflow for the same commit has also succeeded before creating a version. Only after both gates pass does it create the `vX.Y.Z` tag and GitHub Release from `VERSION`.
 
 For air-gapped deployment, transfer only approved image archives, SBOMs, checksums, release metadata, and configuration templates. Real credentials are injected inside the target environment.

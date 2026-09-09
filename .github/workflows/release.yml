@@ -1,0 +1,101 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout validated main commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Verify matching Security workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          security_run_id="$(
+            gh run list               --repo "$GITHUB_REPOSITORY"               --workflow Security               --commit "$SHA"               --event push               --json databaseId,createdAt               --jq 'sort_by(.createdAt) | reverse | .[0].databaseId'
+          )"
+
+          if [[ -z "$security_run_id" || "$security_run_id" == "null" ]]; then
+            echo "No matching Security workflow run found for $SHA."
+            exit 1
+          fi
+
+          gh run watch "$security_run_id"             --repo "$GITHUB_REPOSITORY"             --exit-status
+
+      - name: Create version tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="$(tr -d '[:space:]' < VERSION)"
+          tag="v$version"
+
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $tag already exists; nothing to do."
+            exit 0
+          fi
+
+          cat > /tmp/release-notes.md <<'EOF'
+          ## 繁體中文
+
+          Enterprise ETL Platform v0.1 Foundation 建立 Data Engineering Platform 的最小企業級基線：
+
+          - Apache Airflow orchestration skeleton
+          - Apache Hop project workspace
+          - PostgreSQL Audit / ETL Execution Log schema
+          - Docker Compose baseline
+          - DEV / TEST / PROD environment separation
+          - GitLab-style CI/CD example
+          - Trivy filesystem / secret scanning
+          - CycloneDX SBOM generation
+          - Immutable image promotion governance
+          - Offline / Air-Gapped deployment design
+          - Monitoring / Observability baseline
+          - 繁體中文 + English 對照文件
+
+          此 Release 僅在 main branch 的 CI 與 Security workflow 都成功後建立。
+
+          ## English
+
+          Enterprise ETL Platform v0.1 Foundation establishes the minimum enterprise-grade baseline for a Data Engineering Platform:
+
+          - Apache Airflow orchestration skeleton
+          - Apache Hop project workspace
+          - PostgreSQL Audit / ETL Execution Log schema
+          - Docker Compose baseline
+          - DEV / TEST / PROD environment separation
+          - GitLab-style CI/CD example
+          - Trivy filesystem / secret scanning
+          - CycloneDX SBOM generation
+          - Immutable image promotion governance
+          - Offline / Air-Gapped deployment design
+          - Monitoring / Observability baseline
+          - Traditional Chinese + English documentation
+
+          This release is created only after both CI and Security workflows succeed on main.
+          EOF
+
+          gh release create "$tag"             --repo "$GITHUB_REPOSITORY"             --target "$SHA"             --title "$tag — Enterprise Data Engineering Foundation"             --notes-file /tmp/release-notes.md
