@@ -1,15 +1,15 @@
 # Enterprise ETL Platform
 
-**目前版本 / Current release: v0.5.0**
+**目前版本 / Current release: v0.6.0**
 
 > **📘 Interactive Project Guide / 專案互動式說明文件**  
-> [Open Live Project Guide](https://kewinall.github.io/enterprise-etl-platform/) · [Repository HTML](docs/enterprise-etl-platform-guide.html) — 面試官 5 分鐘速讀、完整架構、Airflow → Hop ETL lifecycle、PostgreSQL Audit/Retry、Immutable Supply Chain、Air-Gapped Delivery、Prometheus/Grafana、SLO/Alerting、CI/Security 與使用教學集中於單一自包含 HTML。
+> [Open Live Project Guide](https://kewinall.github.io/enterprise-etl-platform/) · [Repository HTML](docs/enterprise-etl-platform-guide.html) — 面試官 5 分鐘速讀、完整架構、Airflow → Hop ETL lifecycle、PostgreSQL Audit/Retry、ETL Intelligence、GitLab Enterprise Delivery、CVE Remediation、Immutable Supply Chain、Air-Gapped Delivery、Prometheus/Grafana、SLO/Alerting 與使用教學集中於 Interactive HTML Guide。
 
 [繁體中文](#繁體中文) | [English](#english)
 
 ## 繁體中文
 
-`enterprise-etl-platform` 是以 **Enterprise Data Engineering Platform** 為核心的作品集專案，涵蓋 ETL/ELT execution、Airflow orchestration、Apache Hop runtime、PostgreSQL audit、retry lifecycle、immutable supply chain、Air-Gapped deployment、Prometheus/Grafana observability、SLO 與 alerting。
+`enterprise-etl-platform` 是以 **Enterprise Data Engineering Platform** 為核心的作品集專案，涵蓋 ETL/ELT execution、Airflow orchestration、Apache Hop runtime、PostgreSQL audit、retry lifecycle、design-time ETL intelligence、GitLab enterprise delivery、CVE remediation、immutable supply chain、Air-Gapped deployment、Prometheus/Grafana observability、SLO 與 alerting。
 
 ## Engineering Decisions & Production Evidence
 
@@ -53,6 +53,70 @@
 - Monitoring stack 掛掉時，為什麼 execution history 不會一起消失？
 - CI 綠燈到底驗證了 syntax，還是實際 runtime behavior？
 
+
+### v0.6 — ETL Intelligence + Enterprise Delivery Security
+
+v0.6 將既有 runtime / audit / observability 平台延伸到 **design-time intelligence** 與 **remediation-driven delivery security**。
+
+~~~text
+Legacy ETL / Apache Hop
+          |
+          v
+Deterministic ETL Parser
+          |
+          v
+Normalized Metadata + Evidence
+          |
+          v
+Sensitive Context Filter
+          |
+          v
+AI Semantic Analyzer
+          |
+          v
+Evidence-bound ETL Intelligence
+~~~
+
+Engineering invariant：
+
+- parser 決定 structural truth；AI 只做 semantic explanation。
+- AI 不直接解析整份 ETL artifact。
+- AI result 必須引用 parser evidence，且不能建立不存在的 SQL / step / dependency。
+- AI unavailable 或 contract validation 失敗時，回到 deterministic fallback。
+- Connection credential 不進 AI context；SQL literal 會 redaction。
+- ETL AI 僅處理 design-time parsing / explanation / migration assistance，不負責 runtime incident RCA。
+
+Enterprise delivery 提供根目錄 .gitlab-ci.yml：
+
+~~~text
+MR → Validate/Test → Build Once → Trivy/Secret/SBOM/CVE Gate
+   → TEST same digest → Approval → PROD same digest
+~~~
+
+Vulnerability lifecycle：
+
+~~~text
+Detect → Applicability → Remediation → Rebuild → SBOM → Rescan
+→ TEST → Approval → Same Digest PROD → Audit Evidence
+~~~
+
+可執行證據：
+
+- scripts/etl_intelligence_smoke.sh
+- scripts/vulnerability_lifecycle_smoke.sh
+- ci/gitlab/verify_reference.py
+- scripts/registry_promote.sh
+- scripts/verify_image_digest.sh
+- tests/test_etl_intelligence.py
+- tests/test_vulnerability_management.py
+- tests/test_gitlab_reference.py
+
+詳細文件：
+
+- docs/ETL_INTELLIGENCE.md
+- docs/GITLAB_CICD.md
+- docs/ENVIRONMENT_PROMOTION.md
+- docs/VULNERABILITY_MANAGEMENT.md
 
 ### v0.5 — Executable Observability
 
@@ -115,9 +179,12 @@ python scripts/validate_repository.py
 python -m unittest discover -s tests -v
 docker compose config --quiet
 
+make etl-intelligence-smoke
 make lifecycle-smoke
 make observability-smoke
 make supply-chain-smoke
+make vulnerability-smoke
+make gitlab-verify
 ```
 
 `make observability-smoke` 會實際建立 synthetic SUCCESS / FAILED / retry SUCCESS / stale RUNNING execution，然後驗證 Prometheus scrape、SLO rules、firing alerts、Alertmanager readiness、Grafana datasource 與 dashboard provisioning。
@@ -148,9 +215,9 @@ docker compose ps
 
 ## English
 
-`enterprise-etl-platform` is an **Enterprise Data Engineering Platform** portfolio project covering ETL execution, orchestration, audit/retry lifecycle, immutable supply chain, air-gapped delivery, and executable observability.
+`enterprise-etl-platform` is an **Enterprise Data Engineering Platform** portfolio project covering ETL execution, orchestration, design-time ETL intelligence, audit/retry lifecycle, GitLab enterprise delivery, vulnerability remediation, immutable supply chain, air-gapped delivery, and executable observability.
 
-v0.5 adds SQL Exporter 0.24.8, Prometheus 3.14.0, Alertmanager 0.34.0, Grafana 13.2.1, read-only ETL metric views, a 99% success SLO, error-budget recording rules, operational alerts, and an auto-provisioned operations dashboard.
+v0.6 adds deterministic ETL parsing, normalized evidence/provenance, evidence-bound semantic analysis with deterministic fallback, a GitLab CI/CD reference, same-digest promotion, and a verifiable CVE remediation lifecycle. v0.5 observability remains fully supported.
 
 `make observability-smoke` creates synthetic success/failure/retry/stale executions and proves metrics, SLO rules, firing alerts, Alertmanager, and Grafana provisioning at runtime.
 
@@ -160,6 +227,10 @@ All sample data, credentials, hostnames, schemas, and company information are sy
 
 - [Interactive Project Guide / 專案互動式說明文件](docs/enterprise-etl-platform-guide.html)
 - [Architecture](docs/ARCHITECTURE.md)
+- [ETL Intelligence](docs/ETL_INTELLIGENCE.md)
+- [GitLab CI/CD Reference](docs/GITLAB_CICD.md)
+- [Environment Promotion](docs/ENVIRONMENT_PROMOTION.md)
+- [Vulnerability Management](docs/VULNERABILITY_MANAGEMENT.md)
 - [Installation](docs/INSTALLATION.md)
 - [Audit Lifecycle](docs/AUDIT_LIFECYCLE.md)
 - [Supply Chain](docs/SUPPLY_CHAIN.md)
