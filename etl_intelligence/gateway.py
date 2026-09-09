@@ -24,7 +24,7 @@ class OpenAICompatibleGatewayClient:
     ):
         self.base_url = (base_url or os.getenv("ETL_AI_GATEWAY_URL") or "").rstrip("/")
         self.api_key = api_key or os.getenv("ETL_AI_GATEWAY_API_KEY")
-        self.model = model or os.getenv("ETL_AI_MODEL") or "mock:etl-intelligence"
+        self.model = model or os.getenv("ETL_AI_MODEL") or "default"
         self.timeout_seconds = timeout_seconds
         if not self.base_url:
             raise ValueError("ETL_AI_GATEWAY_URL or base_url is required")
