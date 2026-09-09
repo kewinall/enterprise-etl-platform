@@ -2,78 +2,72 @@
 
 ## 繁體中文
 
-### v0.4 Security baseline
+### v0.5 Security baseline
 
-1. **Secret Scan**：Repository policy + Trivy secret scanner。
-2. **Trivy**：PR 與 main 執行 filesystem vulnerability / secret scan。
-3. **Repository SBOM**：Security workflow 產生 CycloneDX JSON。
-4. **Image SBOM**：v0.4 offline bundle 使用 Syft 產生 CycloneDX image SBOM。
-5. **Executable ETL CI**：PostgreSQL + Hop audit/retry/persistence。
-6. **Executable Supply-Chain CI**：build / promote / checksum / signing / offline load。
-7. **Synthetic-only**：Sample Data、Hostname、Credential、Schema 全為 generic。
-8. **Runtime credential injection**：真實 Secret 不 bake 進 runtime image。
+原有控制維持：
 
-### Image security boundary
+- Secret Scan
+- Trivy filesystem scan
+- Repository CycloneDX SBOM
+- Image SBOM
+- immutable image identity
+- signed/checksummed offline bundle
+- runtime credential injection
 
-Runtime image包含：
+新增 observability controls：
 
-- Apache Hop runtime
-- ETL project
-- generic metadata
-- provenance labels
+1. SQL Exporter 經 `etl_observability` read-only views 取得資料。
+2. Grafana 只讀 Prometheus，不直接讀 PostgreSQL。
+3. Repository credential 全為 synthetic sample。
+4. Alertmanager local receiver 不含外部 webhook/token。
+5. Monitoring endpoints 在 production 應限制 private network / ingress。
+6. Grafana production admin credential 必須外部注入。
+7. Notification credential 應由 Secret manager 管理。
+8. Metrics label 不應包含 customer payload、token、password、SQL text 或高基數敏感 identifier。
 
-Runtime image不應包含：
+### Monitoring data sensitivity
 
-- production database password
-- API token
-- private signing key
-- customer data
-- environment-specific production endpoint
+即使 metrics 不含業務 payload，仍可能揭露：
 
-### Signing
+- pipeline names
+- environment
+- failure rate
+- execution frequency
+- last-success time
+- operational health
 
-`create_offline_bundle.sh` 支援：
+因此 production Prometheus/Grafana/Alertmanager 仍需：
 
-`SIGNING_PRIVATE_KEY=/secure/path/key.pem`
+- authentication
+- authorization
+- TLS
+- retention policy
+- backup policy
+- network isolation
 
-若沒有提供，CI 只會建立 ephemeral key 來測試流程。
+### Synthetic monitor identity
 
-**Ephemeral CI key 不是 production trust anchor。**
+Repository migration 中的 `etl_monitor` / synthetic password 只供 portfolio/local CI。
 
-正式 signing private key 應存放於：
+正式環境應：
 
-- HSM
-- Vault
-- CI protected secret
-- 其他受控 signing service
+- 建立獨立 read-only monitoring identity
+- password/credential 由 Secret 管理
+- restrict CONNECT / schema usage / view SELECT
+- 定期 rotation
 
-Trusted public key 應透過獨立可信任管道配送到 Air-Gapped environment。
+### Alertmanager
 
-### Verification
+`portfolio-null` receiver 故意不向外發送。
 
-Offline environment 先驗：
-
-1. detached signature
-2. archive SHA-256
-3. internal SHA256SUMS signature
-4. individual file checksums
-5. loaded image ID
-
-驗證未完成前不得部署。
-
-### PostgreSQL / Airflow / Hop
-
-v0.3 原有規則維持：
-
-- PostgreSQL metadata 使用 runtime variables。
-- Audit error 不保存 Credential/token/full sensitive payload。
-- Hop Server 應位於 private network。
-- 不把 Docker socket 掛給 Airflow runtime。
+Slack、Teams、Email、PagerDuty 等 integration 不應在 repository 中保存真實 token/webhook。
 
 ## English
 
-v0.4 adds image-level SBOM generation, signed/checksummed offline bundles, immutable image identity checks, and executable supply-chain validation.
+v0.5 preserves the existing repository, image, SBOM, signing, and runtime-secret controls while adding a monitoring security boundary.
 
-Real credentials and signing private keys are never baked into the runtime image. CI may use an ephemeral key only to prove the mechanism; production signing keys must come from protected external key management.
+SQL Exporter reads only aggregate observability views, and Grafana reads Prometheus rather than PostgreSQL directly. Production monitoring endpoints require authentication, TLS, network isolation, retention controls, and externally managed credentials.
 
-An air-gapped environment must verify the detached signature, archive checksum, internal signed checksums, and loaded image identity before deployment.
+Metric labels must not contain sensitive payloads, tokens, passwords, SQL text, or uncontrolled high-cardinality identifiers.
+
+The repository monitoring identity and password are synthetic local examples only.

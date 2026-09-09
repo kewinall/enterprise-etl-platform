@@ -9,9 +9,9 @@
 - Python 3.12
 - Git
 - OpenSSL
-- Internet-connected build zone 若需首次取得 base image / Syft image
+- Connected build/test zone 首次需取得 container images
 
-### Clone 與驗證
+### Repository validation
 
 ```bash
 git clone https://github.com/kewinall/enterprise-etl-platform.git
@@ -21,94 +21,72 @@ cp .env.example .env
 python scripts/validate_repository.py
 python -m unittest discover -s tests -v
 docker compose config --quiet
-
 make lifecycle-smoke
+make observability-smoke
 make supply-chain-smoke
 ```
 
-### Build packaged Hop runtime
+### Monitoring stack
 
 ```bash
-SOURCE_SHA="$(git rev-parse HEAD)" \
-IMAGE_REPOSITORY=enterprise-etl-hop \
-IMAGE_TAG=candidate-v0.4.0 \
-bash scripts/build_runtime_image.sh
-```
-
-Project 會 bake 到：
-
-`/opt/enterprise-etl/project`
-
-### Compose 啟動
-
-```bash
-docker compose --profile orchestration up -d --build
+docker compose --profile monitoring up -d
 docker compose ps
 ```
 
-Compose 只 mount runtime environment file，不再用 bind mount 取代 packaged ETL project。
+Endpoints：
 
-### v0.3 lifecycle smoke
+- Grafana: `http://localhost:3000`
+- Prometheus: `http://localhost:9090`
+- Alertmanager: `http://localhost:9093`
+- SQL Exporter: `http://localhost:9399/metrics`
 
-`make lifecycle-smoke` 仍會驗證：
+Local synthetic Grafana credential 來自 `.env.example`，不得沿用到 production。
 
-`attempt 1 FAILED → attempt 2 SUCCESS → STARTED,FAILED,STARTED,SUCCEEDED → 3 target rows`
+### Existing PostgreSQL volume upgrade
 
-### v0.4 supply-chain smoke
+PostgreSQL init scripts只在新 data directory 執行。
 
-`make supply-chain-smoke` 會：
-
-1. build candidate image
-2. candidate → TEST
-3. TEST → PROD
-4. 比對 immutable image ID
-5. 產生 CycloneDX image SBOM
-6. `docker save`
-7. 建立 manifest/checksum/signature
-8. 移除 local references
-9. verify bundle
-10. `docker load`
-11. 再次比對 image ID
-
-產出於：
-
-`dist/release/`
-
-### Air-Gapped install
-
-將 Release assets 搬入離線環境後：
+若沿用 v0.4 local volume，需要套用：
 
 ```bash
-bash scripts/verify_offline_bundle.sh \
-  enterprise-etl-offline-v0.4.0.tar.gz \
-  /secure/path/trusted-public-key.pem
+docker compose up -d postgres
+
+docker compose exec -T postgres \
+  psql -U etl_user -d etl_audit \
+  < postgres/init/003_v0_5_observability.sql
 ```
 
-驗證成功後 image 已由 `docker load` 匯入。
+此 migration 建立 read-only observability views 與 synthetic sample monitor role。
 
-接著由目標環境注入：
+正式環境應改由受控 migration / DBA 流程建立 monitoring identity，password 由 Secret manager 注入。
 
-- PostgreSQL endpoint
-- Database credential
-- Hop Server credential
-- 其他 production-specific configuration
+### Dashboard
 
-### Signing key
+Grafana 啟動後會自動 provision：
 
-正式 bundle 建立時：
+- Prometheus datasource
+- `Enterprise ETL Operations` dashboard
+
+### Observability smoke
 
 ```bash
-SIGNING_PRIVATE_KEY=/secure/path/signing-key.pem \
-IMAGE_REF=enterprise-etl-hop:prod-v0.4.0 \
-bash scripts/create_offline_bundle.sh
+make observability-smoke
 ```
 
-Private key 不可 commit 到 repository。
+Smoke test 使用 temporary Docker network，不依賴既有 Compose state；完成後會 cleanup。
+
+### Air-Gapped note
+
+v0.4 Hop runtime offline bundle 機制保持不變。
+
+若 production Air-Gapped environment 也要部署 v0.5 monitoring stack，Prometheus / Alertmanager / Grafana / SQL Exporter image 應透過組織既有 image approval/mirroring 流程搬入，避免將所有第三方 image 無限制塞入 ETL runtime bundle。
 
 ## English
 
-v0.4 builds a packaged Hop runtime image with the ETL project baked into `/opt/enterprise-etl/project`.
+Use `docker compose --profile monitoring up -d` to start PostgreSQL plus SQL Exporter, Prometheus, Alertmanager, and Grafana.
 
-Run `make supply-chain-smoke` to prove build-once promotion, image SBOM generation, offline archive creation, checksums, detached signatures, image removal/reload, and identity verification.
+For an existing v0.4 PostgreSQL volume, apply `003_v0_5_observability.sql` manually because PostgreSQL initialization scripts are not rerun for an existing data directory.
 
-For an air-gapped target, verify the bundle with an independently trusted public key before loading and deploying it. Production credentials are injected only inside the target environment.
+The Grafana datasource and Enterprise ETL Operations dashboard are provisioned automatically.
+
+For air-gapped production monitoring, mirror and approve third-party monitoring images through the organization's image-supply process rather than embedding them into the ETL runtime archive.

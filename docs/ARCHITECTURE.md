@@ -2,83 +2,77 @@
 
 ## 繁體中文
 
-### v0.4 整體架構
+### v0.5 整體架構
 
 ```mermaid
 flowchart LR
-  SRC[Source Commit] --> BUILD[Build Hop Runtime Image]
-  BUILD --> ID[Immutable Image ID]
-  ID --> TEST[TEST Reference]
-  TEST --> APPROVE[Approval]
-  APPROVE --> PROD[PROD Reference]
-  PROD --> BUNDLE[Air-Gapped Bundle]
-
-  BUNDLE --> IMG[Docker Image Archive]
-  BUNDLE --> SBOM[CycloneDX Image SBOM]
-  BUNDLE --> MAN[Promotion Manifest]
-  BUNDLE --> SUM[SHA256SUMS]
-  BUNDLE --> SIG[Detached Signature]
-
-  AF[Apache Airflow] --> HOP[Packaged Hop Runtime]
+  AF[Apache Airflow] --> HOP[Packaged Apache Hop]
   HOP --> AUDIT[(PostgreSQL Audit)]
   HOP --> DATA[(PostgreSQL Data)]
+
+  AUDIT --> VIEW[etl_observability Views]
+  VIEW --> SQLX[SQL Exporter]
+  SQLX --> PROM[Prometheus]
+  PROM --> RULES[SLO / Alert Rules]
+  PROM --> GRAF[Grafana]
+  RULES --> AM[Alertmanager]
+
+  SRC[Source Commit] --> IMG[Immutable Hop Image]
+  IMG --> TEST[TEST]
+  TEST --> PROD[PROD]
+  PROD --> OFFLINE[Air-Gapped Bundle]
 ```
 
-### Build artifact boundary
+### Observability boundary
 
-v0.4 的 Apache Hop project 不再依賴 Compose bind mount 作為主要 runtime artifact。
+Prometheus 不直接持有 PostgreSQL credential，也不直接執行 SQL。
 
-`docker/hop-runtime.Dockerfile` 將 project bake 到：
+責任切分：
 
-`/opt/enterprise-etl/project`
+| Component | Responsibility |
+|---|---|
+| PostgreSQL audit | execution truth / durable history |
+| `etl_observability` | read-only aggregate surface |
+| SQL Exporter | SQL → Prometheus exposition |
+| Prometheus | scrape / TSDB / recording / alert evaluation |
+| Alertmanager | routing baseline |
+| Grafana | visualization |
+| Airflow/Hop | orchestration / ETL execution |
 
-環境差異仍由外部 Hop Environment file 提供，因此：
+### Read-only metrics surface
 
-- Code / pipeline / metadata 屬於 immutable image。
-- Endpoint / credential / environment variable 屬於 runtime configuration。
-- PROD promotion 不重新 build image。
+`003_v0_5_observability.sql` 建立：
 
-### Promotion identity
+- `etl_observability.pipeline_status_totals`
+- `etl_observability.pipeline_runtime_metrics`
+- sample monitor identity `etl_monitor`
 
-CI 使用 Docker image ID：
+Raw audit table 不需要直接暴露給 Grafana。
 
-`sha256:...`
+### SLO boundary
 
-驗證 Candidate、TEST、PROD 為同一 artifact。
+第一版 SLO：
 
-正式 Registry 應改用 registry digest：
+`completed ETL success ratio >= 99%`
 
-`repository/image@sha256:...`
+只有 `SUCCESS` / `FAILED` 進入 monotonic counter；`RUNNING` 狀態透過 gauge 觀察。
 
-作為跨環境 promotion identity。
+### Existing platform layers
 
-### ETL execution boundary
+v0.1–v0.4 能力仍保留：
 
-v0.3 能力保持不變：
-
-- Airflow：schedule / retry / run identity。
-- Hop：ETL execution。
-- PostgreSQL：execution audit + persisted target。
-- `run_id + attempt_number + correlation_id`：execution-to-data traceability。
-
-### Offline deployment boundary
-
-Air-Gapped bundle 只攜帶：
-
-- immutable image archive
-- SBOM
-- manifest
-- checksums
-- signatures
-
-真實 Credential 不進 bundle，由目標環境自行注入。
+- Airflow → Hop executable orchestration
+- PostgreSQL retry-aware audit
+- persisted ETL target
+- immutable image promotion
+- signed/checksummed Air-Gapped bundle
 
 ## English
 
-v0.4 adds a software-supply-chain layer around the existing audited ETL runtime.
+v0.5 adds a read-only observability boundary between PostgreSQL audit data and the monitoring stack.
 
-The Apache Hop project is baked into the runtime image at `/opt/enterprise-etl/project`, while environment-specific endpoints and credentials remain external runtime configuration.
+SQL Exporter converts aggregate PostgreSQL views into Prometheus metrics. Prometheus owns time-series storage, SLO recording rules, and alert evaluation; Alertmanager owns routing baseline; Grafana owns visualization.
 
-CI proves candidate, TEST, and PROD references resolve to the same immutable Docker image ID. A production registry should use the registry digest as the authoritative promotion identity.
+Only final SUCCESS/FAILED attempts are represented as monotonic run counters. RUNNING health is exposed as gauges such as stale execution count.
 
-The air-gapped bundle contains the image archive, CycloneDX SBOM, promotion manifest, checksums, and detached signatures; it never contains real production credentials.
+The v0.1–v0.4 orchestration, audit, persistence, immutable promotion, and air-gapped layers remain intact.
