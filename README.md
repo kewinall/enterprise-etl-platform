@@ -25,6 +25,8 @@
 | **PostgreSQL 作為 execution truth** | Run / Attempt / Event 可持久化，retry 不覆蓋歷史，可支援 audit、metrics、SLO | PostgreSQL 成為平台依賴，需要 HA、backup 與 schema migration 管理 |
 | **Build once, promote same immutable artifact** | 避免 TEST 與 PROD 重新 build 造成 drift，可用 digest/checksum 驗證交付一致性 | 需要額外 promotion、bundle、verification 與 registry/offline artifact lifecycle |
 | **Observability 從 read-only audit views 匯出** | Monitoring 不需要直接寫入 ETL runtime；SQL Exporter → Prometheus → Alertmanager/Grafana 可獨立演進 | Metrics freshness 依賴 audit 資料與 exporter scrape path |
+| **先 deterministic parse / validate，再讓 AI 解釋** | Legacy migration 的 structural truth 與 PASS/FAIL 不依賴模型，可重現、可稽核 | Parser/plugin coverage 需要逐步擴充；未知元件會保守落入 manual review |
+| **ETL truth 與 MCP / RAG / DataOps / Model Gateway 解耦** | 各 repo 維持單一責任，metadata 可被多種 consumer 安全重用 | 需要維護跨服務 contract/version compatibility |
 
 ### Production Failure & Recovery
 
@@ -34,6 +36,8 @@
 | Audit database 不可用 | Durable execution truth 不可被確認；不能只依 scheduler UI 推定完整成功 | 將 audit DB 視為平台 dependency，恢復後重新驗證 run/attempt 狀態並補做必要 retry |
 | Prometheus / Grafana 暫時不可用 | Data execution truth 仍保留於 PostgreSQL；監控面與 ETL execution path 分離 | 恢復 SQL Exporter / Prometheus / Alertmanager / Grafana 後重新 scrape，不重建 ETL history |
 | Offline bundle / image identity 不一致 | checksum / image identity verification 應阻止不一致 artifact promotion | 重新產生或驗證 bundle，只有通過 identity/checksum 驗證的 artifact 才進入下一環境 |
+| Pentaho/plugin 元件無可靠 mapping | Migration planner 標示 manual-review / manual-required，不讓 AI 自動放行 | 新增 plugin-specific parser/fixture/test；人工完成 target design 與 reconciliation |
+| AI Gateway / MCP / RAG 暫時不可用 | ETL parser、metadata、migration validator 與 runtime truth 仍獨立存在 | 恢復對應 integration layer 後重試，不重建或改寫 ETL truth |
 
 ### Production Evidence
 
@@ -44,6 +48,9 @@
 | Immutable promotion / offline bundle 有 runtime verification | `scripts/supply_chain_smoke.sh`, `scripts/promote_image.sh`, `scripts/verify_offline_bundle.sh` |
 | Repository policy 與 regression baseline | `scripts/validate_repository.py`, `tests/test_repository.py` |
 | CI / Security gate | `.github/workflows/ci.yml`, `.github/workflows/security.yml` |
+| Pentaho → Hop modernization correctness | `scripts/p1_integration_smoke.sh`, `tests/test_migration_case.py`, `etl_intelligence/migration.py` |
+| Metadata / lineage authority boundary | `etl_intelligence/metadata.py`, `schemas/etl-metadata.schema.json`, `docs/METADATA_LINEAGE.md` |
+| Enterprise AI / access integration boundary | `etl_intelligence/gateway.py`, `docs/PORTFOLIO_INTEGRATION.md` |
 
 ### Interview Questions This Project Can Answer
 
@@ -52,6 +59,10 @@
 - 如何證明 TEST 與 PROD 使用的是同一個 artifact？
 - Monitoring stack 掛掉時，為什麼 execution history 不會一起消失？
 - CI 綠燈到底驗證了 syntax，還是實際 runtime behavior？
+- Pentaho → Hop 哪些元件可直接 mapping，哪些必須 manual review？
+- 為什麼 AI 不能當 migration correctness mechanism？
+- structural lineage、deterministic inference 與 AI interpretation 怎麼區分？
+- 為什麼 ETL repo 不自己實作 MCP protocol 與 multi-provider routing？
 
 
 ### v0.7 — Legacy ETL Modernization + Metadata / Lineage + Enterprise AI Integration
@@ -275,9 +286,9 @@ docker compose ps
 
 ## English
 
-`enterprise-etl-platform` is an **Enterprise Data Engineering Platform** portfolio project covering ETL execution, orchestration, design-time ETL intelligence, audit/retry lifecycle, GitLab enterprise delivery, vulnerability remediation, immutable supply chain, air-gapped delivery, and executable observability.
+`enterprise-etl-platform` is an **Enterprise Data Engineering Platform** portfolio project covering legacy ETL modernization, Pentaho-to-Apache-Hop migration, normalized metadata/lineage, ETL execution, orchestration, design-time ETL intelligence, audit/retry lifecycle, enterprise delivery security, immutable supply chain, air-gapped delivery, and executable observability.
 
-v0.6 adds deterministic ETL parsing, normalized evidence/provenance, evidence-bound semantic analysis with deterministic fallback, a GitLab CI/CD reference, same-digest promotion, and a verifiable CVE remediation lifecycle. v0.5 observability remains fully supported.
+v0.7 adds a public synthetic Pentaho-to-Hop modernization case, normalized metadata v1.1, explicit structural/inferred/AI lineage separation, deterministic migration validation, a governed MCP access boundary, and a preferred Multi-LLM AI Gateway path. v0.6 delivery-security and v0.5 observability capabilities remain fully supported.
 
 `make observability-smoke` creates synthetic success/failure/retry/stale executions and proves metrics, SLO rules, firing alerts, Alertmanager, and Grafana provisioning at runtime.
 
@@ -288,6 +299,9 @@ All sample data, credentials, hostnames, schemas, and company information are sy
 - [Interactive Project Guide / 專案互動式說明文件](docs/enterprise-etl-platform-guide.html)
 - [Architecture](docs/ARCHITECTURE.md)
 - [ETL Intelligence](docs/ETL_INTELLIGENCE.md)
+- [Pentaho → Apache Hop Migration](docs/PENTAHO_TO_HOP_MIGRATION.md)
+- [Metadata & Lineage](docs/METADATA_LINEAGE.md)
+- [Portfolio Integration](docs/PORTFOLIO_INTEGRATION.md)
 - [GitLab CI/CD Reference](docs/GITLAB_CICD.md)
 - [Environment Promotion](docs/ENVIRONMENT_PROMOTION.md)
 - [Vulnerability Management](docs/VULNERABILITY_MANAGEMENT.md)
