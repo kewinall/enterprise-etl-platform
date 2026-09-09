@@ -20,6 +20,20 @@ class PentahoToHopMigrationCaseTest(unittest.TestCase):
         self.assertIn("TARGET_SCHEMA", {item["name"] for item in metadata["variables"]})
         self.assertTrue(metadata["lineage"]["structural"])
         self.assertTrue(metadata["lineage"]["inferred"])
+        self.assertTrue(
+            any(
+                edge.get("from") == "table:staging.orders"
+                and edge.get("classification") == "inferred-deterministic"
+                for edge in metadata["lineage"]["inferred"]
+            )
+        )
+        self.assertFalse(
+            any(
+                edge.get("from") == "table:staging.orders"
+                and edge.get("kind") == "reads_from"
+                for edge in metadata["lineage"]["structural"]
+            )
+        )
         self.assertEqual(metadata["lineage"]["ai_interpretation"], [])
         self.assertTrue(metadata["capability_boundaries"])
 
