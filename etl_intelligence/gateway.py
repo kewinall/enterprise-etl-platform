@@ -29,7 +29,16 @@ class OpenAICompatibleGatewayClient:
         if not self.base_url:
             raise ValueError("ETL_AI_GATEWAY_URL or base_url is required")
 
-    def __call__(self, system_prompt: str, context: dict[str, Any]) -> dict[str, Any]:
+    def __call__(
+        self,
+        system_prompt: str,
+        context: str | dict[str, Any],
+    ) -> dict[str, Any]:
+        user_content = (
+            context
+            if isinstance(context, str)
+            else json.dumps(context, ensure_ascii=False, sort_keys=True)
+        )
         payload = {
             "model": self.model,
             "stream": False,
@@ -38,7 +47,7 @@ class OpenAICompatibleGatewayClient:
                 {"role": "system", "content": system_prompt},
                 {
                     "role": "user",
-                    "content": json.dumps(context, ensure_ascii=False, sort_keys=True),
+                    "content": user_content,
                 },
             ],
         }
