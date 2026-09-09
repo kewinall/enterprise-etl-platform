@@ -18,14 +18,20 @@ services:
       retries: 12
 
   hop:
-    image: ${HOP_IMAGE:-apache/hop:2.19.0}
+    image: ${HOP_IMAGE:-enterprise-etl-hop:local}
+    build:
+      context: .
+      dockerfile: docker/hop-runtime.Dockerfile
+      args:
+        VERSION: ${PLATFORM_VERSION:-0.4.0}
+        VCS_REF: ${VCS_REF:-local}
     hostname: etl-hop
     profiles: ["etl", "orchestration"]
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      HOP_PROJECT_FOLDER: /files/project
+      HOP_PROJECT_FOLDER: /opt/enterprise-etl/project
       HOP_PROJECT_NAME: enterprise-etl
       HOP_ENVIRONMENT_NAME: compose
       HOP_ENVIRONMENT_CONFIG_FILE_NAME_PATHS: /files/environment/compose.json
@@ -37,7 +43,6 @@ services:
     ports:
       - "8181:8181"
     volumes:
-      - ./hop/projects/enterprise-etl:/files/project:ro
       - ./hop/environments/compose.json:/files/environment/compose.json:ro
 
   airflow:

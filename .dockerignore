@@ -1,0 +1,10 @@
+.git
+.github
+dist
+.env
+*.pem
+*.key
+*.sig
+__pycache__
+*.pyc
+.DS_Store

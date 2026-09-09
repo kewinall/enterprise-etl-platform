@@ -35,7 +35,13 @@ jobs:
           security_run_id=""
           for _ in $(seq 1 30); do
             security_run_id="$(
-              gh run list                 --repo "$GITHUB_REPOSITORY"                 --workflow Security                 --commit "$SHA"                 --event push                 --json databaseId,createdAt                 --jq 'sort_by(.createdAt) | reverse | .[0].databaseId'
+              gh run list \
+                --repo "$GITHUB_REPOSITORY" \
+                --workflow Security \
+                --commit "$SHA" \
+                --event push \
+                --json databaseId,createdAt \
+                --jq 'sort_by(.createdAt) | reverse | .[0].databaseId'
             )"
 
             if [[ -n "$security_run_id" && "$security_run_id" != "null" ]]; then
@@ -49,7 +55,9 @@ jobs:
             exit 1
           fi
 
-          gh run watch "$security_run_id"             --repo "$GITHUB_REPOSITORY"             --exit-status
+          gh run watch "$security_run_id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --exit-status
 
       - name: Create version tag and GitHub Release
         env:
@@ -63,14 +71,50 @@ jobs:
           tag="v$version"
           notes_file="docs/releases/$tag.md"
 
-          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Release $tag already exists; nothing to do."
-            exit 0
-          fi
-
           if [[ ! -f "$notes_file" ]]; then
             echo "Missing bilingual release notes: $notes_file"
             exit 1
           fi
 
-          gh release create "$tag"             --repo "$GITHUB_REPOSITORY"             --target "$SHA"             --title "$tag — Enterprise Data Engineering Platform"             --notes-file "$notes_file"
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$SHA" \
+              --title "$tag — Enterprise Data Engineering Platform" \
+              --notes-file "$notes_file"
+          else
+            echo "Release $tag already exists; reusing it for validated assets."
+          fi
+
+      - name: Download validated offline bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_RUN_ID: ${{ github.event.workflow_run.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist-release
+          gh run download "$CI_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name offline-bundle \
+            --dir dist-release
+
+      - name: Attach offline bundle assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(tr -d '[:space:]' < VERSION)"
+          tag="v$version"
+
+          mapfile -d '' assets < <(find dist-release -type f -print0)
+          if [[ "${#assets[@]}" -eq 0 ]]; then
+            echo "No validated offline bundle assets found."
+            exit 1
+          fi
+
+          gh release upload "$tag" \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber \
+            "${assets[@]}"
