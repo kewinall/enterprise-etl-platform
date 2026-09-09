@@ -7,8 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class RepositoryBaselineTest(unittest.TestCase):
-    def test_version_is_v0_3(self):
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "0.3.0")
+    def test_version_is_v0_4(self):
+        self.assertEqual((ROOT / "VERSION").read_text().strip(), "0.4.0")
 
     def test_v0_3_audit_schema_models_retry_lifecycle(self):
         sql = (ROOT / "postgres/init/002_v0_3_audit_lifecycle.sql").read_text()
@@ -126,22 +126,60 @@ class RepositoryBaselineTest(unittest.TestCase):
         ):
             self.assertIn(token, dag)
 
-    def test_compose_registers_hop_environment_for_postgres(self):
+    def test_compose_uses_packaged_hop_runtime(self):
         compose = (ROOT / "docker-compose.yml").read_text()
-        self.assertIn("apache/hop:2.19.0", compose)
+        self.assertIn("enterprise-etl-hop:local", compose)
+        self.assertIn("docker/hop-runtime.Dockerfile", compose)
+        self.assertIn("HOP_PROJECT_FOLDER: /opt/enterprise-etl/project", compose)
         self.assertIn("HOP_ENVIRONMENT_NAME: compose", compose)
-        self.assertIn(
-            "HOP_ENVIRONMENT_CONFIG_FILE_NAME_PATHS: /files/environment/compose.json",
-            compose,
-        )
         self.assertIn("./hop/environments/compose.json", compose)
-        self.assertIn("HOP_AUDIT_START_PATH", compose)
-        self.assertIn("HOP_AUDIT_FINALIZE_PATH", compose)
+        self.assertNotIn("./hop/projects/enterprise-etl:/files/project", compose)
 
         environment = json.loads((ROOT / "hop/environments/compose.json").read_text())
         variables = {item["name"]: item["value"] for item in environment["variables"]}
         self.assertEqual(variables["POSTGRES_HOST"], "postgres")
         self.assertEqual(variables["POSTGRES_PORT"], "5432")
+
+    def test_runtime_dockerfile_bakes_project_and_provenance_labels(self):
+        dockerfile = (ROOT / "docker/hop-runtime.Dockerfile").read_text()
+        self.assertIn("FROM apache/hop:2.19.0", dockerfile)
+        self.assertIn("COPY --chown=hop:hop hop/projects/enterprise-etl", dockerfile)
+        self.assertIn("org.opencontainers.image.version", dockerfile)
+        self.assertIn("org.opencontainers.image.revision", dockerfile)
+        self.assertIn("/opt/enterprise-etl/project", dockerfile)
+
+    def test_promotion_script_enforces_same_image_id(self):
+        script = (ROOT / "scripts/promote_image.sh").read_text()
+        self.assertIn("docker tag", script)
+        self.assertIn("docker image inspect", script)
+        self.assertIn("SOURCE_ID", script)
+        self.assertIn("TARGET_ID", script)
+        self.assertIn('SOURCE_ID}" != "${TARGET_ID}', script)
+
+    def test_offline_bundle_contains_sbom_checksum_and_signature(self):
+        script = (ROOT / "scripts/create_offline_bundle.sh").read_text()
+        for token in (
+            "anchore/syft:v1.51.1",
+            "cyclonedx-json",
+            "docker save",
+            "SHA256SUMS",
+            "sha256sum",
+            "openssl dgst -sha256 -sign",
+            "manifest.json",
+            "promotion_policy",
+        ):
+            self.assertIn(token, script)
+
+    def test_offline_verifier_loads_and_checks_image_identity(self):
+        script = (ROOT / "scripts/verify_offline_bundle.sh").read_text()
+        for token in (
+            "openssl dgst -sha256 -verify",
+            "sha256sum -c",
+            "docker load",
+            "EXPECTED_IMAGE_ID",
+            "LOADED_IMAGE_ID",
+        ):
+            self.assertIn(token, script)
 
     def test_lifecycle_smoke_validates_retry_and_persistence(self):
         smoke = (ROOT / "scripts/etl_lifecycle_smoke.sh").read_text()
@@ -150,6 +188,33 @@ class RepositoryBaselineTest(unittest.TestCase):
         self.assertIn("2:SUCCESS:3:", smoke)
         self.assertIn("STARTED,FAILED,STARTED,SUCCEEDED", smoke)
         self.assertIn('target_count}" != "3"', smoke)
+
+    def test_supply_chain_smoke_proves_build_once_promotion_and_reload(self):
+        smoke = (ROOT / "scripts/supply_chain_smoke.sh").read_text()
+        for token in (
+            "candidate-v",
+            "test-v",
+            "prod-v",
+            "promote_image.sh",
+            "create_offline_bundle.sh",
+            "verify_offline_bundle.sh",
+            "EXPECTED_IMAGE_ID",
+            "LOADED_ID",
+        ):
+            self.assertIn(token, smoke)
+
+    def test_ci_uploads_validated_offline_bundle(self):
+        ci = (ROOT / ".github/workflows/ci.yml").read_text()
+        self.assertIn("supply_chain_smoke.sh", ci)
+        self.assertIn("actions/upload-artifact@v4", ci)
+        self.assertIn("name: offline-bundle", ci)
+
+    def test_release_attaches_ci_offline_assets(self):
+        release = (ROOT / ".github/workflows/release.yml").read_text()
+        self.assertIn("gh run download", release)
+        self.assertIn("--name offline-bundle", release)
+        self.assertIn("gh release upload", release)
+        self.assertIn("--clobber", release)
 
 
 if __name__ == "__main__":
