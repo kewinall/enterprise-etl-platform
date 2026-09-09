@@ -1,0 +1,15 @@
+global:
+  scrape_timeout_offset: 500ms
+  min_interval: 2s
+  max_connections: 2
+  max_idle_connections: 2
+  max_connection_lifetime: 5m
+
+target:
+  name: etl-audit
+  data_source_name: "postgresql://etl_monitor:synthetic-monitor-password@postgres:5432/etl_audit?sslmode=disable"
+  collectors:
+    - etl_audit
+
+collector_files:
+  - "/config/etl_audit.collector.yml"
