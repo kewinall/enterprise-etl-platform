@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<transformation>
+  <info>
+    <name>legacy_order_enrichment</name>
+    <parameters>
+      <parameter><name>BATCH_DATE</name><default_value>2026-01-01</default_value><description>Synthetic batch date</description></parameter>
+    </parameters>
+  </info>
+  <variables>
+    <variable><name>TARGET_SCHEMA</name><value>analytics</value><scope>artifact</scope></variable>
+  </variables>
+  <connection><name>legacy_dw</name><type>POSTGRESQL</type><server>db.example.invalid</server><database>demo</database><port>5432</port></connection>
+  <connection><name>analytics_dw</name><type>POSTGRESQL</type><server>analytics.example.invalid</server><database>demo</database><port>5432</port></connection>
+  <step><name>Read Orders</name><type>TableInput</type><connection>legacy_dw</connection><sql>SELECT order_id, customer_id, amount, status FROM staging.orders WHERE business_date = '${BATCH_DATE}'</sql></step>
+  <step><name>Filter Ready</name><type>FilterRows</type></step>
+  <step><name>Customer Lookup</name><type>DatabaseLookup</type><connection>legacy_dw</connection><schema>dimensions</schema><table>customers</table></step>
+  <step><name>Calculate Net</name><type>Calculator</type><fields><field><name>net_amount</name><type>Number</type><calculation>amount</calculation></field></fields></step>
+  <step><name>Read Discounts</name><type>TableInput</type><connection>legacy_dw</connection><sql>SELECT order_id, discount_amount FROM staging.discounts</sql></step>
+  <step><name>Join Discounts</name><type>MergeJoin</type></step>
+  <step><name>Write Orders</name><type>TableOutput</type><connection>analytics_dw</connection><schema>${TARGET_SCHEMA}</schema><table>orders_enriched</table></step>
+  <order>
+    <hop><from>Read Orders</from><to>Filter Ready</to><enabled>Y</enabled></hop>
+    <hop><from>Filter Ready</from><to>Customer Lookup</to><enabled>Y</enabled></hop>
+    <hop><from>Customer Lookup</from><to>Calculate Net</to><enabled>Y</enabled></hop>
+    <hop><from>Calculate Net</from><to>Join Discounts</to><enabled>Y</enabled></hop>
+    <hop><from>Read Discounts</from><to>Join Discounts</to><enabled>Y</enabled></hop>
+    <hop><from>Join Discounts</from><to>Write Orders</to><enabled>Y</enabled></hop>
+  </order>
+</transformation>
