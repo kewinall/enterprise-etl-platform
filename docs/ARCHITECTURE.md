@@ -2,31 +2,53 @@
 
 ## 繁體中文
 
-### v0.6 整體架構
+### v0.7 整體架構
 
 ~~~text
-                     DESIGN-TIME
-Legacy ETL / Hop
-       |
-       v
-Deterministic Parser
-       |
-       v
-Normalized Metadata + Evidence + Source SHA
-       |
-       +--> deterministic fallback
-       |
-       v
-Sensitive Context Boundary
-       |
-       v
-AI Semantic Analyzer
-       |
-       v
-ETL Intelligence
-(summary / logic / SQL / source-target / dependency / migration)
+                         DESIGN / MODERNIZATION
+Legacy Pentaho KTR/KJB / Apache Hop
+              |
+              v
+      Deterministic Parser
+              |
+              v
+   Normalized Metadata v1.1
+ Pipeline / Step / SQL / Table / Column /
+ Dependency / Parameter / Variable / Evidence
+              |
+       +------+-------------------+
+       |                          |
+       v                          v
+Migration Planner            Lineage Model
+       |                 structural / inferred
+       v                          |
+Apache Hop Target                 +--> JSON contract
+       |                                   |
+       v                                   v
+Deterministic Validator            Data Platform MCP Server
+       |                                   |
+       v                              DataOps Copilot
+Representative data
+reconciliation
 
-                     RUNTIME
+Optional semantic path:
+Normalized filtered metadata
+       |
+       v
+Semantic Analyzer
+       |
+       v
+Multi-LLM AI Gateway
+       |
+OpenAI / Anthropic / Gemini / Local
+
+Knowledge path:
+ETL docs / generated descriptions / runbooks
+       |
+       v
+Enterprise RAG Platform
+
+                         RUNTIME
 Airflow --> Packaged Apache Hop --> PostgreSQL Audit + Data
                                       |
                                       v
@@ -36,10 +58,10 @@ Airflow --> Packaged Apache Hop --> PostgreSQL Audit + Data
                                            |      |
                                       Alertmanager Grafana
 
-                     DELIVERY
+                         DELIVERY
 Source / MR
    |
-Validation + Unit + Intelligence Smoke
+Validation + Unit + P1 Migration/Lineage Smoke
    |
 Build Candidate ONCE
    |
@@ -54,46 +76,48 @@ PROD same registry digest
 Audit Evidence / Air-Gapped Bundle
 ~~~
 
-### Structural truth vs semantic commentary
+### Authority model
 
 | Layer | Authority | May infer? |
 |---|---|---|
-| Deterministic parser | ETL structure | No |
-| Normalized metadata | Canonical extracted facts | No |
-| AI semantic analyzer | Explanation only | Yes, but only within evidence |
-| Runtime audit | Execution truth | No |
-| Observability | Derived operational metrics | No structural authority |
+| Deterministic parser | artifact structure | No probabilistic inference |
+| Normalized metadata | canonical extracted facts | No |
+| Structural lineage | explicit hops/read-write/workflow references | No |
+| Inferred-deterministic lineage | conservative graph/SQL derivation | Yes, but explicitly labeled inferred |
+| Migration validator | migration pass/fail evidence | deterministic only |
+| AI semantic analyzer | explanation / recommendation | Yes, commentary only |
+| MCP Server | controlled access to ETL truth | No new ETL truth |
+| Runtime audit | execution truth | No |
+| Observability | derived runtime metrics | No structural authority |
 
-AI result 與 parser metadata 是兩個獨立 artifact。AI result 透過 parser_truth_digest 指向其依據，但不能修改原始 metadata。
+AI result 與 parser metadata 是兩個獨立 artifact。AI 不得新增 structural lineage，不得把 interpretation 寫回 deterministic truth。
 
-### Production failure & recovery
+### Failure / recovery
 
 | Failure | Behavior | Recovery |
 |---|---|---|
-| AI unavailable | deterministic metadata 仍產生 | 使用 fallback summary；稍後可重新做 semantic analysis |
-| AI hallucinated evidence / node | output validator 拒絕 | fallback；不污染 parser truth |
-| Sensitive config exists in source | AI context 移除 connection config、SQL literals redaction | 修正 source secret handling；保留 parser evidence |
-| CVE scan blocks | candidate 不得 promotion | applicability analysis → remediate/rebuild → SBOM/rescan |
-| TEST/PROD digest mismatch | promotion fail closed | 回到已驗證 candidate digest，不 rebuild PROD |
-| Monitoring unavailable | PostgreSQL execution truth 保留 | 恢復 exporter/Prometheus/Grafana 後重新 scrape |
-| Offline bundle verification fail | 不部署 | 使用 trusted key/checksum 重新驗證或重新交付 |
+| Unsupported Pentaho/plugin component | migration disposition = manual-required / manual-review | plugin-specific parser + fixture + regression test 後才提高 automation |
+| SQL / variable semantics uncertain | 不宣稱 automatic equivalence | preserve source SQL, explicit review, representative reconciliation |
+| Column lineage cannot be proven | capability boundary 明確標示 | dialect AST + catalog expansion + plugin parser 後再提升 |
+| AI unavailable / invalid output | deterministic metadata / migration 仍可工作 | fallback；稍後重跑 semantic analysis |
+| AI hallucinated edge | validator / evidence contract 拒絕 | 不污染 lineage truth |
+| MCP unavailable | ETL metadata producer 仍保有 truth artifact | 恢復 access layer，不重建 parser truth |
+| RAG unavailable | modernization/runtime 不受影響 | 恢復 knowledge layer |
+| CVE scan blocks | candidate 不得 promotion | applicability → remediation → rebuild → rescan |
+| TEST/PROD digest mismatch | promotion fail closed | 使用已驗證 digest，不 rebuild PROD |
 
-### Portfolio responsibility boundary
+### Cross-repository responsibility boundary
 
-- enterprise-etl-platform：Data Engineering runtime + design-time ETL intelligence + delivery/security lifecycle
-- agentic-dataops-copilot：runtime incident reasoning / RCA / governed operations
-- enterprise-rag-platform：knowledge retrieval / grounding / knowledge governance
-- data-platform-mcp-server：tool / integration protocol layer
-- multi-llm-ai-gateway：model routing / policy / budget / control plane
-
-因此 v0.6 的 AI 能力只服務 ETL design-time，不變成通用 Agent、RAG、MCP 或 Model Gateway。
+- **enterprise-etl-platform**：Legacy ETL parser、normalized metadata、migration analysis、lineage truth、runtime/delivery。
+- **data-platform-mcp-server**：MCP protocol、read-only tool contract、auth/scope/tenant/audit；不重新解析 Pentaho/Hop。
+- **enterprise-rag-platform**：ETL 文件與描述的 knowledge ingestion / retrieval / grounding。
+- **agentic-dataops-copilot**：runtime incident evidence correlation / RCA / governed operations。
+- **multi-llm-ai-gateway**：LLM routing、fallback、provider abstraction、cost/policy/auth。
 
 ## English
 
-v0.6 adds a design-time intelligence plane and an enterprise delivery-security plane without changing the repository boundary.
+v0.7 extends the platform into a legacy-modernization architecture while preserving deterministic authority boundaries.
 
-The deterministic parser owns ETL structural truth. AI receives only normalized filtered metadata and produces separately validated semantic commentary. Runtime execution truth remains in PostgreSQL audit data.
+Pentaho and Hop artifacts are parsed into normalized metadata v1.1. Structural lineage is separated from deterministic inference and AI interpretation. Migration pass/fail remains deterministic and is backed by parser evidence, SQL/table reconciliation, workflow dependency preservation, representative data checks, and human review.
 
-Delivery builds one immutable candidate and promotes the same registry digest through TEST and PROD after security, SBOM, vulnerability, test, and approval gates.
-
-Adjacent portfolio repositories retain runtime RCA, knowledge AI, integration protocol, and model-control responsibilities.
+The Data Platform MCP Server exposes this ETL truth through governed read-only tools; RAG consumes documentation/knowledge; DataOps consumes evidence for runtime reasoning; the Multi-LLM AI Gateway owns model routing and provider governance.
