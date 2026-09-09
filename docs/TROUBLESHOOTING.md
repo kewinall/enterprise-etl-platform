@@ -2,101 +2,120 @@
 
 ## 繁體中文
 
-### `docker compose config` 失敗
+### `make lifecycle-smoke` 失敗
+
+先確認：
 
 ```bash
+docker version
 docker compose version
-cp .env.example .env
-docker compose config
-```
-
-確認使用 Docker Compose v2。
-
-### `make hop-smoke` 無法連線
-
-先確認 Docker 可正常 pull/run：
-
-```bash
+docker pull postgres:16-alpine
 docker pull apache/hop:2.19.0
-docker ps
 ```
 
-查看 smoke container log：
+Smoke script 失敗時會保留 response/log 於 workflow output，結束時 cleanup temporary containers/network。
+
+### PostgreSQL 找不到 v0.3 table
+
+症狀：
+
+```text
+relation etl_audit.etl_execution_event does not exist
+relation etl_data.synthetic_customer_daily does not exist
+```
+
+原因通常是沿用 v0.2 volume，init scripts 沒有重新執行。
+
+套用 migration：
 
 ```bash
-docker ps -a | grep enterprise-etl-hop-smoke
+docker compose exec -T postgres \
+  psql -U etl_user -d etl_audit \
+  < postgres/init/002_v0_3_audit_lifecycle.sql
 ```
 
-CI/script 結束時會自動 cleanup；若人工中止，可手動移除殘留 container。
-
-### Hop Server 回傳 401 / 403
+### Hop 找不到 `audit-postgres`
 
 確認：
 
-- `HOP_SERVER_USER`
-- `HOP_SERVER_PASS`
-- Airflow container 取得的環境變數
-
 ```bash
-docker compose exec airflow env | grep '^HOP_'
+docker compose exec hop \
+  ls -l /files/project/metadata/rdbms/
 ```
 
-不要把正式 password 寫回 Repository。
-
-### Airflow DAG 看不到
+並確認 Hop container 有：
 
 ```bash
-docker compose logs airflow
-docker compose exec airflow airflow dags list
+docker compose exec hop env | grep '^POSTGRES_'
 ```
 
-確認 `airflow/dags/hop_synthetic_customer_pipeline.py` 已 mount 到 `/opt/airflow/dags`。
+### Duplicate execution attempt
 
-### Hop pipeline 執行失敗
+若看到 unique constraint / `uq_etl_execution_attempt` 錯誤，代表相同：
 
-```bash
-docker compose logs hop
+`pipeline + environment + run_id + attempt_number`
+
+被重複建立。
+
+正常 Airflow retry 會增加 `try_number`；不要手動重用同一 attempt identity。
+
+### Execution 長期停在 RUNNING
+
+查詢：
+
+```sql
+SELECT *
+FROM etl_audit.etl_execution_log
+WHERE status = 'RUNNING'
+ORDER BY started_at;
 ```
 
-確認：
+可能原因：
 
-- Hop image 為 2.19.0
-- `/files/project/project-config.json` 存在
-- `/files/project/pipelines/synthetic_customer_daily.hpl` 存在
-- `HOP_PIPELINE_PATH` 在 Airflow 中仍為 `${PROJECT_HOME}/pipelines/synthetic_customer_daily.hpl`
+- Airflow task/process 被強制終止。
+- audit finalize endpoint 未執行。
+- PostgreSQL/Hop 在 finalize 時不可用。
+
+v0.3 保留 RUNNING 讓維運人員能識別 incomplete execution；自動 reconciliation 可於後續版本加入。
+
+### Target 已寫入但 attempt FAILED
+
+若 data pipeline 成功、finalize 過程失敗，Airflow task 仍可判定該 attempt 失敗。Target row 有 `attempt_number`，因此 retry 資料可分辨，不會覆蓋上一 attempt。
+
+### Airflow retry 沒有增加 attempt
+
+確認 DAG 使用：
+
+`context["ti"].try_number`
+
+以及 `execute_etl_with_audit` task 設定 `retries=2`。
 
 ### Security workflow 失敗
-
-先執行：
 
 ```bash
 python scripts/secret_scan.py
 ```
 
-Trivy 發現問題時應更新 dependency/base image 或建立具依據且有期限的 exception，不應直接停用 security gate。
+Trivy finding 應更新 dependency/base image 或建立有期限且具理由的 exception，不應直接停用 gate。
 
 ## English
 
-### Docker Compose validation fails
+### Lifecycle smoke failure
 
-Confirm Docker Compose v2 is installed and create `.env` from `.env.example`.
+Verify Docker, PostgreSQL 16 Alpine, and Apache Hop 2.19.0 are available. The CI smoke script prints Hop responses and logs when pipeline execution fails.
 
-### Hop smoke test cannot connect
+### Missing v0.3 tables
 
-Verify Docker can pull and run `apache/hop:2.19.0`. The smoke script starts a temporary Hop Server and cleans it up automatically.
+An existing v0.2 PostgreSQL volume does not rerun initialization scripts. Apply `002_v0_3_audit_lifecycle.sql` manually.
 
-### Hop Server returns 401/403
+### Duplicate attempt
 
-Check `HOP_SERVER_USER` and `HOP_SERVER_PASS` in the runtime environment. Never commit production passwords.
+The unique execution identity is pipeline + environment + run_id + attempt_number. Airflow retries must use a new `try_number`.
 
-### Airflow DAG is missing
+### Stuck RUNNING execution
 
-Inspect Airflow logs and run `airflow dags list` inside the container. Confirm the DAG bind mount is available.
+A RUNNING row may indicate abrupt task termination or a failed audit-finalization call. v0.3 intentionally preserves incomplete attempts for investigation.
 
-### Hop execution fails
+### Data persisted but attempt failed
 
-Inspect `docker compose logs hop`, confirm the project configuration and `.hpl` file exist, and ensure the pipeline path still uses `${PROJECT_HOME}`.
-
-### Security workflow fails
-
-Run the local secret-policy scanner first. Remediate Trivy findings or document a justified, time-bounded exception rather than disabling the security gate.
+Target rows carry `attempt_number`, so side effects from a failed attempt remain distinguishable from data produced by a retry.
