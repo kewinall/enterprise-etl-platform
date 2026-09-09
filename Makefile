@@ -1,4 +1,4 @@
-.PHONY: validate test compose-check security-check hop-smoke lifecycle-smoke
+.PHONY: validate test compose-check security-check hop-smoke lifecycle-smoke supply-chain-smoke
 
 validate:
 	python scripts/validate_repository.py
@@ -17,3 +17,6 @@ hop-smoke:
 
 lifecycle-smoke:
 	bash scripts/etl_lifecycle_smoke.sh
+
+supply-chain-smoke:
+	bash scripts/supply_chain_smoke.sh
