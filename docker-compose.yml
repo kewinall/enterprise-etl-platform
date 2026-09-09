@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    hostname: etl-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-etl_audit}
+      POSTGRES_USER: ${POSTGRES_USER:-etl_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-synthetic-dev-password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-etl_user} -d ${POSTGRES_DB:-etl_audit}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  airflow:
+    image: ${AIRFLOW_IMAGE:-apache/airflow:3.0.6}
+    hostname: etl-airflow
+    profiles: ["orchestration"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-etl_user}:${POSTGRES_PASSWORD:-synthetic-dev-password}@postgres:5432/${POSTGRES_DB:-etl_audit}
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./airflow/logs:/opt/airflow/logs
+
+  hop:
+    image: ${HOP_IMAGE:-apache/hop:2.15.0}
+    hostname: etl-hop
+    profiles: ["etl"]
+    environment:
+      HOP_PROJECT_FOLDER: /files/project
+      HOP_PROJECT_NAME: enterprise-etl
+    volumes:
+      - ./hop/projects/enterprise-etl:/files/project
+
+volumes:
+  postgres-data:
