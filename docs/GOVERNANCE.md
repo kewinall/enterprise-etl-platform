@@ -4,69 +4,67 @@
 
 ### Platform lifecycle
 
-`Design → Develop → Validate → Lifecycle Smoke → Observability Smoke → Security Scan → Build → TEST → Approve → Promote → PROD → Observe → Audit`
+Design → Parse → Normalize → Semantic Analyze → Validate → Test → Security Gate → Build → TEST → Approve → Promote → PROD → Observe → Audit
+
+### Design-time governance
+
+ETL Intelligence 只處理 design-time：
+
+- deterministic parsing
+- normalized metadata
+- evidence / provenance
+- business-logic explanation
+- SQL explanation
+- source-target interpretation
+- dependency summary
+- migration assistance
+
+AI 不負責 runtime incident RCA。
+
+Parser truth 可在沒有 AI 的情況下獨立使用；AI output 必須引用 parser evidence，且透過 parser_truth_digest 與原始 metadata 關聯。
 
 ### Execution governance
 
-每次 execution 仍以：
+每次 execution 仍以 run_id、attempt_number、correlation_id 維持 retry 與 target-data traceability。Retry 是新 attempt，不覆蓋失敗歷史。
 
-- `run_id`
-- `attempt_number`
-- `correlation_id`
+### Delivery governance
 
-維持 retry 與 target-data traceability。
+- GitHub Actions：公開 Portfolio CI。
+- GitLab CI：Enterprise Delivery Reference。
+- Build once。
+- TEST / PROD：same registry digest。
+- PROD：manual approval + serialized promotion。
+- Rollback：選擇前一個已批准 digest，不 rebuild。
 
-Retry 是新 attempt，不覆蓋失敗歷史。
+### Vulnerability governance
 
-### Artifact governance
+Scanner finding 必須留下 applicability / remediation decision evidence。
 
-v0.4 規則維持：
+可接受 disposition：
 
-**Build once. Promote the same artifact. Never rebuild for PROD.**
+- remediated
+- vendor-backport
+- not-applicable
+- risk-accepted with approval
+
+Artifact 有變更時必須產生新的 candidate digest 並重跑 SBOM / scan / tests / TEST。
 
 ### Observability governance
 
-v0.5 增加：
+Monitoring 維持 read-only observability surface；Grafana 不直接讀 raw audit table。SLO / alert rules 進 version control，CI 必須證明 rule loading 與關鍵 alert firing。
 
-- monitoring queries 只能經 read-only observability surface
-- Grafana 不直接連 raw audit table
-- SLO / alert rule 必須納入 version control
-- CI 必須證明 Prometheus rule 可載入
-- CI 必須證明關鍵 alert 可實際 firing
-- notification credential 不可 commit
-- production receiver / escalation 應由部署環境管理
+### Portfolio responsibility boundary
 
-### SLO baseline
-
-`ETL completed-attempt success ratio >= 99%`
-
-此為 portfolio baseline，不代表所有 production pipeline 使用同一 threshold。
-
-正式環境應按 business criticality 調整：
-
-- SLO target
-- burn-rate window
-- maintenance window
-- escalation
-- retention
-
-### Release gate
-
-Tag / Release 仍只在相同 main commit 的：
-
-- CI success
-- Security success
-
-後建立。
-
-v0.5 CI 已包含 lifecycle、observability、immutable supply-chain 三層 runtime smoke。
+- enterprise-etl-platform：ETL design-time + runtime + delivery/security lifecycle
+- agentic-dataops-copilot：runtime incident reasoning / RCA
+- enterprise-rag-platform：knowledge AI / grounding
+- data-platform-mcp-server：tool / integration layer
+- multi-llm-ai-gateway：model control plane
 
 ## English
 
-v0.5 adds operational governance to the existing execution and artifact governance model.
+v0.6 governs design-time ETL semantic analysis separately from runtime operations.
 
-Monitoring queries use a read-only observability surface; Grafana does not query raw audit data directly. SLO and alert rules are version controlled and CI must prove both rule loading and real alert evaluation.
+Parser truth is authoritative and AI output is evidence-bound. Enterprise delivery uses build-once same-digest promotion, explicit vulnerability disposition evidence, manual production approval, and rollback to previously approved immutable artifacts.
 
-The 99% completed-attempt success SLO is a portfolio baseline. Production thresholds, burn-rate windows, escalation, maintenance windows, and retention should be governed by workload criticality.
-
-Release gating still requires CI and Security success on the same main commit.
+Adjacent repositories retain incident RCA, knowledge AI, integration, and model-control responsibilities.
