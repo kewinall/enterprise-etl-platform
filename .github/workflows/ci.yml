@@ -33,3 +33,13 @@ jobs:
 
       - name: Execute PostgreSQL audit/retry/persistence lifecycle smoke test
         run: bash scripts/etl_lifecycle_smoke.sh
+
+      - name: Execute immutable image promotion/offline bundle smoke test
+        run: bash scripts/supply_chain_smoke.sh
+
+      - name: Upload offline release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-bundle
+          path: dist/release/*
+          if-no-files-found: error
