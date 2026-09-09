@@ -18,6 +18,22 @@ REQUIRED_DOCS = [
     "docs/AUDIT_LIFECYCLE.md",
     "docs/SUPPLY_CHAIN.md",
     "docs/SLO_ALERTING.md",
+    "docs/ETL_INTELLIGENCE.md",
+    "docs/GITLAB_CICD.md",
+    "docs/ENVIRONMENT_PROMOTION.md",
+    "docs/VULNERABILITY_MANAGEMENT.md",
+]
+REQUIRED_IMPLEMENTATION = [
+    ".gitlab-ci.yml",
+    "etl_intelligence/parser.py",
+    "etl_intelligence/analyzer.py",
+    "schemas/etl-metadata.schema.json",
+    "schemas/etl-intelligence.schema.json",
+    "scripts/etl_intelligence_smoke.sh",
+    "scripts/vulnerability_gate.py",
+    "scripts/vulnerability_lifecycle_smoke.sh",
+    "scripts/registry_promote.sh",
+    "scripts/verify_image_digest.sh",
 ]
 FORBIDDEN_TOKENS = [
     "10." + "0.0.",
@@ -43,6 +59,13 @@ def main() -> int:
             errors.append(f"missing required document: {rel}")
             continue
         validate_bilingual(path, errors)
+
+    for rel in REQUIRED_IMPLEMENTATION:
+        if not (ROOT / rel).exists():
+            errors.append(f"missing required implementation: {rel}")
+
+    if (ROOT / "VERSION").read_text(encoding="utf-8").strip() != "0.6.0":
+        errors.append("VERSION must be 0.6.0 for the v0.6 release")
 
     releases_dir = ROOT / "docs/releases"
     if releases_dir.exists():

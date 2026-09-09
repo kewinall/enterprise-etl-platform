@@ -1,4 +1,4 @@
-.PHONY: validate test compose-check security-check hop-smoke lifecycle-smoke supply-chain-smoke observability-smoke
+.PHONY: validate test compose-check security-check hop-smoke lifecycle-smoke supply-chain-smoke observability-smoke etl-intelligence-smoke vulnerability-smoke gitlab-verify p0-check
 
 validate:
 	python scripts/validate_repository.py
@@ -23,3 +23,14 @@ supply-chain-smoke:
 
 observability-smoke:
 	bash scripts/observability_smoke.sh
+
+etl-intelligence-smoke:
+	bash scripts/etl_intelligence_smoke.sh
+
+vulnerability-smoke:
+	bash scripts/vulnerability_lifecycle_smoke.sh
+
+gitlab-verify:
+	python ci/gitlab/verify_reference.py
+
+p0-check: validate test etl-intelligence-smoke vulnerability-smoke gitlab-verify
