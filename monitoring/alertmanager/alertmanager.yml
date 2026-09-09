@@ -1,0 +1,15 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: portfolio-null
+  group_by:
+    - alertname
+    - pipeline_name
+    - environment_name
+  group_wait: 5s
+  group_interval: 30s
+  repeat_interval: 4h
+
+receivers:
+  - name: portfolio-null
