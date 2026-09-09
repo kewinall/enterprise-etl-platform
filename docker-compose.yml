@@ -17,29 +17,42 @@ services:
       timeout: 5s
       retries: 5
 
+  hop:
+    image: ${HOP_IMAGE:-apache/hop:2.19.0}
+    hostname: etl-hop
+    profiles: ["etl", "orchestration"]
+    environment:
+      HOP_PROJECT_FOLDER: /files/project
+      HOP_PROJECT_NAME: enterprise-etl
+      HOP_SERVER_HOSTNAME: 0.0.0.0
+      HOP_SERVER_PORT: ${HOP_SERVER_PORT:-8181}
+      HOP_SERVER_USER: ${HOP_SERVER_USER:-hop-user}
+      HOP_SERVER_PASS: ${HOP_SERVER_PASS:-synthetic-hop-password}
+      HOP_LOG_LEVEL: Basic
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./hop/projects/enterprise-etl:/files/project:ro
+
   airflow:
     image: ${AIRFLOW_IMAGE:-apache/airflow:3.0.6}
     hostname: etl-airflow
     profiles: ["orchestration"]
+    command: standalone
     depends_on:
-      postgres:
-        condition: service_healthy
+      hop:
+        condition: service_started
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-etl_user}:${POSTGRES_PASSWORD:-synthetic-dev-password}@postgres:5432/${POSTGRES_DB:-etl_audit}
+      PLATFORM_ENV: ${PLATFORM_ENV:-DEV}
+      HOP_BASE_URL: http://hop:8181
+      HOP_SERVER_USER: ${HOP_SERVER_USER:-hop-user}
+      HOP_SERVER_PASS: ${HOP_SERVER_PASS:-synthetic-hop-password}
+      HOP_PIPELINE_PATH: "${PROJECT_HOME}/pipelines/synthetic_customer_daily.hpl"
+    ports:
+      - "8080:8080"
     volumes:
       - ./airflow/dags:/opt/airflow/dags:ro
-      - ./airflow/logs:/opt/airflow/logs
-
-  hop:
-    image: ${HOP_IMAGE:-apache/hop:2.15.0}
-    hostname: etl-hop
-    profiles: ["etl"]
-    environment:
-      HOP_PROJECT_FOLDER: /files/project
-      HOP_PROJECT_NAME: enterprise-etl
-    volumes:
-      - ./hop/projects/enterprise-etl:/files/project
 
 volumes:
   postgres-data:
