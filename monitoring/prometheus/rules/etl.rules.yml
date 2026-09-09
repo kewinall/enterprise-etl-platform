@@ -5,12 +5,12 @@ groups:
       - record: etl:slo_success_ratio
         expr: |
           sum by (pipeline_name, environment_name) (
-            etl_pipeline_runs_total{status="SUCCESS"}
+            etl_pipeline_run_total{status="SUCCESS"}
           )
           /
           clamp_min(
             sum by (pipeline_name, environment_name) (
-              etl_pipeline_runs_total{status=~"SUCCESS|FAILED"}
+              etl_pipeline_run_total{status=~"SUCCESS|FAILED"}
             ),
             1
           )
