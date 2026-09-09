@@ -4,7 +4,7 @@
 
 ## 繁體中文
 
-`enterprise-etl-platform` 是以 **Enterprise Data Engineering Platform** 為核心的作品集專案，主角是 ETL/ELT 執行、Orchestration、Auditability、環境分離、安全供應鏈、Container Image promotion、Air-Gapped deployment 與 Observability。
+`enterprise-etl-platform` 是以 **Enterprise Data Engineering Platform** 為核心的作品集專案，主角是 ETL/ELT execution、Orchestration、Auditability、Retry lifecycle、環境分離、安全供應鏈、Container Image promotion、Air-Gapped deployment 與 Observability。
 
 ### 專案定位
 
@@ -16,25 +16,42 @@
 | `multi-llm-ai-gateway` | Model Control Plane |
 | **`enterprise-etl-platform`** | **Data Engineering Platform** |
 
-### v0.2 — Executable Orchestration
+### v0.3 — Audited ETL Lifecycle
 
-v0.2 將 v0.1 Foundation 升級為真正可執行的：
+v0.3 的執行鏈：
 
-`Airflow → authenticated Hop Server REST API → Apache Hop .hpl pipeline`
+```text
+Airflow run_id / try_number
+        ↓
+audit_execution_start.hpl
+        ↓
+PostgreSQL RUNNING + STARTED event
+        ↓
+synthetic_customer_daily.hpl
+        ↓
+etl_data.synthetic_customer_daily
+        ↓
+audit_execution_finalize.hpl
+        ↓
+SUCCESS / FAILED + finished_at + lifecycle event
+        ↓
+Airflow retry when failed
+```
 
 核心內容：
 
-- Apache Hop **2.19.0**
-- `synthetic_customer_daily.hpl` executable pipeline
-- Hop project configuration
-- Hop Server long-lived Docker service
-- Airflow `hop_synthetic_customer_daily` DAG
-- Airflow 傳入 `RUN_ENV` lifecycle parameter
-- Docker Compose local integration
-- PR / main CI 實際啟動 Hop Server 並執行 pipeline smoke test
+- Apache Hop 2.19.0
+- Apache Airflow 3.x style Task SDK DAG
+- PostgreSQL execution audit
+- `correlation_id` + `attempt_number`
+- append-only lifecycle event
+- retry-aware failure history
+- persisted synthetic ETL target
+- variable-driven Hop PostgreSQL connection
+- DEV / TEST / PROD parameter separation
+- executable PostgreSQL + Hop CI integration test
 - Trivy / Secret Scan / CycloneDX SBOM
-- DEV / TEST / PROD configuration separation
-- version-aware gated Tag / Release automation
+- gated Tag / Release
 
 ### 快速驗證
 
@@ -43,10 +60,19 @@ cp .env.example .env
 python scripts/validate_repository.py
 python -m unittest discover -s tests -v
 docker compose config --quiet
-make hop-smoke
+make lifecycle-smoke
 ```
 
-### 啟動整合環境
+`make lifecycle-smoke` 會實際驗證：
+
+```text
+attempt 1 → FAILED
+attempt 2 → SUCCESS
+lifecycle events → STARTED,FAILED,STARTED,SUCCEEDED
+persisted target → 3 rows
+```
+
+### 啟動
 
 ```bash
 docker compose --profile orchestration up -d
@@ -55,39 +81,28 @@ docker compose ps
 
 - Airflow UI: `http://localhost:8080`
 - Hop Server: `http://localhost:8181`
+- PostgreSQL: `localhost:5432`
 - DAG: `hop_synthetic_customer_daily`
 
-Airflow standalone 第一次啟動時會在 container log 顯示 local login credential：
+> 所有 Sample Data、Hostname、Credential、Schema 與公司資訊均為 synthetic / generic。
 
-```bash
-docker compose logs airflow
-```
+詳細文件：
 
-> 所有 Sample Data、Hostname、Credential、Schema 與環境資訊均為 synthetic / generic。v0.2 不保存真實客戶或公司內部資訊。
-
-詳細說明請參考 `docs/`，尤其是 `docs/ORCHESTRATION.md`。
+- `docs/ARCHITECTURE.md`
+- `docs/ORCHESTRATION.md`
+- `docs/AUDIT_LIFECYCLE.md`
+- `docs/INSTALLATION.md`
+- `docs/SECURITY.md`
 
 ## English
 
-`enterprise-etl-platform` is a portfolio project centered on an **Enterprise Data Engineering Platform**. Its primary concerns are ETL/ELT execution, orchestration, auditability, environment separation, software supply-chain security, container image promotion, air-gapped deployment, and observability.
+`enterprise-etl-platform` is an **Enterprise Data Engineering Platform** portfolio project focused on ETL/ELT execution, orchestration, auditability, retry lifecycle management, environment separation, supply-chain security, image promotion, air-gapped deployment, and observability.
 
-### Positioning
+### v0.3 — Audited ETL Lifecycle
 
-| Repository | Primary role |
-|---|---|
-| `enterprise-rag-platform` | Knowledge AI Platform |
-| `agentic-dataops-copilot` | AI Reasoning / DataOps Operations |
-| `data-platform-mcp-server` | Tool / Integration Platform |
-| `multi-llm-ai-gateway` | Model Control Plane |
-| **`enterprise-etl-platform`** | **Data Engineering Platform** |
+v0.3 correlates Airflow `run_id` and `try_number` with Apache Hop execution, PostgreSQL lifecycle audit, and persisted synthetic target rows.
 
-### v0.2 — Executable Orchestration
-
-v0.2 turns the v0.1 foundation into an executable:
-
-`Airflow → authenticated Hop Server REST API → Apache Hop .hpl pipeline`
-
-It includes Apache Hop 2.19.0, an executable synthetic pipeline, Hop Server, an Airflow orchestration DAG, lifecycle parameter passing, Docker Compose integration, executable CI smoke tests, Trivy, secret scanning, CycloneDX SBOM generation, environment separation, and gated version-aware releases.
+It introduces retry-aware execution attempts, append-only STARTED/SUCCEEDED/FAILED events, persisted ETL output, variable-driven PostgreSQL connection metadata, and a real CI integration test that proves a failed first attempt and successful retry remain separately auditable.
 
 ### Quick validation
 
@@ -96,22 +111,7 @@ cp .env.example .env
 python scripts/validate_repository.py
 python -m unittest discover -s tests -v
 docker compose config --quiet
-make hop-smoke
+make lifecycle-smoke
 ```
 
-### Start the integration
-
-```bash
-docker compose --profile orchestration up -d
-docker compose ps
-```
-
-- Airflow UI: `http://localhost:8080`
-- Hop Server: `http://localhost:8181`
-- DAG: `hop_synthetic_customer_daily`
-
-Use `docker compose logs airflow` to obtain the local standalone login generated by Airflow.
-
-> All sample data, hostnames, credentials, schemas, and environment values are synthetic or generic. v0.2 contains no real customer or internal company information.
-
-See `docs/`, especially `docs/ORCHESTRATION.md`.
+All sample data, hostnames, credentials, schemas, and company information are synthetic or generic.
