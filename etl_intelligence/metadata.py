@@ -78,6 +78,7 @@ def finalize_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
         for item in result["dependencies"]
     }
     structural: list[dict[str, Any]] = []
+    inferred: list[dict[str, Any]] = []
 
     for hop in result.get("hops", []):
         if not hop.get("enabled", True):
@@ -121,15 +122,25 @@ def finalize_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
                 edge_from, edge_to = f"table:{table_name}", f"step:{step_id}"
             else:
                 edge_from, edge_to = f"step:{step_id}", f"table:{table_name}"
-            structural.append(
-                {
-                    "kind": edge_kind,
-                    "from": edge_from,
-                    "to": edge_to,
-                    "classification": "structural",
-                    "evidence_refs": list(endpoint.get("evidence_refs", [])),
-                }
+            endpoint_classification = str(
+                endpoint.get("classification") or "structural"
             )
+            edge = {
+                "kind": edge_kind,
+                "from": edge_from,
+                "to": edge_to,
+                "classification": (
+                    "structural"
+                    if endpoint_classification == "structural"
+                    else "inferred-deterministic"
+                ),
+                "evidence_refs": list(endpoint.get("evidence_refs", [])),
+            }
+            if endpoint_classification == "structural":
+                structural.append(edge)
+            else:
+                edge["derivation"] = endpoint_classification
+                inferred.append(edge)
 
     for dependency in result["dependencies"]:
         if dependency.get("kind") != "pipeline":
@@ -150,7 +161,6 @@ def finalize_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
             continue
         adjacency.setdefault(str(dependency.get("from")), set()).add(str(dependency.get("to")))
 
-    inferred: list[dict[str, Any]] = []
     for source in result.get("sources", []):
         source_step = source.get("step_id")
         if not source_step:
