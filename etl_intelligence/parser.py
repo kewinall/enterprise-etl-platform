@@ -9,7 +9,9 @@ from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree
 
-SCHEMA_VERSION = "1.0"
+from .metadata import finalize_metadata
+
+SCHEMA_VERSION = "1.1"
 
 
 def _sha256(path: Path) -> str:
@@ -46,10 +48,14 @@ class DeterministicETLParser:
     def parse(self, source: str | Path) -> dict[str, Any]:
         path = Path(source)
         suffix = path.suffix.lower()
+        if suffix in {".ktr", ".kjb"}:
+            from .pentaho import PentahoLegacyParser
+
+            return PentahoLegacyParser().parse(path)
         if suffix in {".hpl", ".hwf", ".xml"}:
-            return self._parse_hop_xml(path)
+            return finalize_metadata(self._parse_hop_xml(path))
         if suffix == ".json":
-            return self._parse_legacy_json(path)
+            return finalize_metadata(self._parse_legacy_json(path))
         raise ValueError(f"unsupported ETL artifact: {path}")
 
     def _base(self, path: Path, name: str, kind: str, fmt: str) -> dict[str, Any]:
@@ -89,6 +95,44 @@ class DeterministicETLParser:
         evidence = EvidenceBuilder(path.as_posix())
         pipeline_ev = evidence.add("pipeline", "./info/name", name)
         data["pipeline"]["evidence_refs"] = [pipeline_ev]
+
+        data.setdefault("parameters", [])
+        for parameter_index, parameter in enumerate(root.findall("./info/parameters/parameter"), start=1):
+            parameter_name = _text(parameter, "name")
+            if not parameter_name:
+                continue
+            parameter_ev = evidence.add(
+                "parameter",
+                f"./info/parameters/parameter[{parameter_index}]",
+                parameter_name,
+            )
+            data["parameters"].append(
+                {
+                    "name": parameter_name,
+                    "default_value": _text(parameter, "default_value") or _text(parameter, "default"),
+                    "description": _text(parameter, "description"),
+                    "evidence_refs": [parameter_ev],
+                }
+            )
+
+        data.setdefault("variables", [])
+        for variable_index, variable in enumerate(root.findall(".//variables/variable"), start=1):
+            variable_name = _text(variable, "name")
+            if not variable_name:
+                continue
+            variable_ev = evidence.add(
+                "variable",
+                f".//variables/variable[{variable_index}]",
+                variable_name,
+            )
+            data["variables"].append(
+                {
+                    "name": variable_name,
+                    "value": _text(variable, "value"),
+                    "scope": _text(variable, "scope", "artifact"),
+                    "evidence_refs": [variable_ev],
+                }
+            )
 
         seen_connections: set[str] = set()
         seen_tables: set[tuple[str, str]] = set()
