@@ -1,0 +1,15 @@
+"""Design-time ETL intelligence primitives.
+
+The deterministic parser owns structural truth. Semantic analysis is a separate,
+optional layer that may use an injected AI client but can never mutate parser truth.
+"""
+
+from .analyzer import SemanticAnalyzer, build_ai_context, metadata_digest
+from .parser import DeterministicETLParser
+
+__all__ = [
+    "DeterministicETLParser",
+    "SemanticAnalyzer",
+    "build_ai_context",
+    "metadata_digest",
+]
