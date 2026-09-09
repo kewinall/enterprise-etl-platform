@@ -6,8 +6,8 @@ stages:
   - promote
 
 variables:
-  IMAGE_NAME: "$CI_REGISTRY_IMAGE/enterprise-etl"
-  HOP_IMAGE: "apache/hop:2.19.0"
+  IMAGE_NAME: "$CI_REGISTRY_IMAGE/enterprise-etl-hop"
+  HOP_BASE_IMAGE: "apache/hop:2.19.0"
   POSTGRES_IMAGE: "postgres:16-alpine"
 
 validate:
@@ -31,10 +31,20 @@ security:
 package:
   stage: package
   script:
-    - echo "Build immutable image for the current commit SHA."
+    - IMAGE_REPOSITORY="$IMAGE_NAME" IMAGE_TAG="$CI_COMMIT_SHA" SOURCE_SHA="$CI_COMMIT_SHA" bash scripts/build_runtime_image.sh
+    - IMAGE_REF="$IMAGE_NAME:$CI_COMMIT_SHA" SOURCE_SHA="$CI_COMMIT_SHA" bash scripts/create_offline_bundle.sh
+  artifacts:
+    paths:
+      - dist/release/
 
-promote:
+promote-test:
+  stage: promote
+  script:
+    - bash scripts/promote_image.sh "$IMAGE_NAME:$CI_COMMIT_SHA" "$IMAGE_NAME:test-$CI_COMMIT_SHA"
+
+promote-prod:
   stage: promote
   when: manual
   script:
-    - echo "Promote the already-built image digest; do not rebuild for PROD."
+    - bash scripts/promote_image.sh "$IMAGE_NAME:test-$CI_COMMIT_SHA" "$IMAGE_NAME:prod-$CI_COMMIT_SHA"
+    - echo "A registry implementation should promote the same registry digest; never rebuild for PROD."
