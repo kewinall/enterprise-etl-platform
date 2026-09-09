@@ -13,14 +13,17 @@ services:
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-etl_user} -d ${POSTGRES_DB:-etl_audit}"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 12
 
   hop:
     image: ${HOP_IMAGE:-apache/hop:2.19.0}
     hostname: etl-hop
     profiles: ["etl", "orchestration"]
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       HOP_PROJECT_FOLDER: /files/project
       HOP_PROJECT_NAME: enterprise-etl
@@ -29,6 +32,11 @@ services:
       HOP_SERVER_USER: ${HOP_SERVER_USER:-hop-user}
       HOP_SERVER_PASS: ${HOP_SERVER_PASS:-synthetic-hop-password}
       HOP_LOG_LEVEL: Basic
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-etl_audit}
+      POSTGRES_USER: ${POSTGRES_USER:-etl_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-synthetic-dev-password}
     ports:
       - "8181:8181"
     volumes:
@@ -49,6 +57,8 @@ services:
       HOP_SERVER_USER: ${HOP_SERVER_USER:-hop-user}
       HOP_SERVER_PASS: ${HOP_SERVER_PASS:-synthetic-hop-password}
       HOP_PIPELINE_PATH: "$${PROJECT_HOME}/pipelines/synthetic_customer_daily.hpl"
+      HOP_AUDIT_START_PATH: "$${PROJECT_HOME}/pipelines/audit_execution_start.hpl"
+      HOP_AUDIT_FINALIZE_PATH: "$${PROJECT_HOME}/pipelines/audit_execution_finalize.hpl"
     ports:
       - "8080:8080"
     volumes:
