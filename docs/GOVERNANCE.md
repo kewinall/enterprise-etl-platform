@@ -4,42 +4,52 @@
 
 ### Lifecycle
 
-`Design → Develop → Validate → Security Scan → Package → TEST → Approve → Promote → PROD → Observe → Audit`
+`Design → Develop → Validate → Execute Smoke Test → Security Scan → Package → TEST → Approve → Promote → PROD → Observe → Audit`
+
+v0.2 在 `Validate` 與 Security gate 之間加入 **real Hop execution smoke test**，避免只有 syntax/config validation。
 
 ### Environment separation
 
 | Environment | Purpose | Artifact rule |
 |---|---|---|
 | DEV | 開發與快速驗證 | 可建立 candidate artifact |
-| TEST | 整合與驗收 | 僅使用 CI 產出的 immutable artifact |
-| PROD | 正式執行 | promotion TEST 已驗證的同一 digest |
+| TEST | 整合與驗收 | 僅使用 CI 驗證的 immutable artifact |
+| PROD | 正式執行 | promotion TEST 驗證的同一 digest |
 
-### Promotion policy
-
-- 不在 PROD rebuild image。
-- Tag 必須對應已通過 main CI/Security 的 commit。
-- Release notes 記錄版本範圍與安全基線。
-- Deployment configuration 與 Credential 分離。
-- rollback 使用前一個已核准 digest。
+`PLATFORM_ENV` 由 Airflow 傳入 Hop 的 `RUN_ENV`。Infrastructure-specific Credential 不屬於 pipeline source code。
 
 ### Release gate
 
-`.github/workflows/release.yml` 以 main branch 的 CI 完成事件作為觸發點，並在建立版本前再次確認同一 commit 的 Security workflow 已成功。只有兩個 gate 都成功時，才會依 `VERSION` 建立 `vX.Y.Z` tag 與 GitHub Release。
+`.github/workflows/release.yml`：
+
+1. 等待 main CI 成功。
+2. 尋找同一 commit 的 Security workflow。
+3. 等 Security 成功。
+4. 讀取 `VERSION`。
+5. 要求存在 `docs/releases/vX.Y.Z.md` 雙語 notes。
+6. 建立 Tag 與 GitHub Release。
+
+因此 Tag 不會指向未通過 CI/Security 的 commit。
+
+### Promotion policy
+
+- PROD 不 rebuild。
+- rollback 使用前一個 approved digest/tag。
+- Deployment configuration 與 Credential 分離。
+- Release metadata、SBOM、checksum 應跟 artifact 一起保存。
 
 ### Air-Gapped transfer
 
-離線部署 bundle 應包含 approved image archive、SBOM、checksum、release metadata、deployment configuration template；真實 Credential 由目標環境注入。
+離線 bundle 應包含 approved image archive、SBOM、checksum、release metadata、deployment configuration template；真實 Credential 在目標環境內注入。
 
 ## English
 
 ### Lifecycle
 
-`Design → Develop → Validate → Security Scan → Package → TEST → Approve → Promote → PROD → Observe → Audit`
+`Design → Develop → Validate → Execute Smoke Test → Security Scan → Package → TEST → Approve → Promote → PROD → Observe → Audit`
 
-DEV may produce candidate artifacts. TEST consumes immutable CI-produced artifacts. PROD promotes the exact digest validated in TEST. Production rebuilds are prohibited; rollback selects a previously approved digest.
+v0.2 adds a real Hop execution smoke test before release. Environment-specific credentials remain outside pipeline source code.
 
-### Release gate
+The release gate waits for CI and the matching Security workflow on the same main commit, reads `VERSION`, requires bilingual version-specific release notes, and only then creates the tag and GitHub Release.
 
-`.github/workflows/release.yml` is triggered by completion of CI on main and verifies that the Security workflow for the same commit has also succeeded before creating a version. Only after both gates pass does it create the `vX.Y.Z` tag and GitHub Release from `VERSION`.
-
-For air-gapped deployment, transfer only approved image archives, SBOMs, checksums, release metadata, and configuration templates. Real credentials are injected inside the target environment.
+Production must promote the artifact already validated in TEST rather than rebuilding it. Air-gapped bundles should include approved images, SBOMs, checksums, release metadata, and configuration templates, with real credentials injected in the target environment.
