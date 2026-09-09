@@ -9,6 +9,8 @@ RUN_SUFFIX="${GITHUB_RUN_ID:-local}-$$"
 NETWORK_NAME="enterprise-etl-v03-${RUN_SUFFIX}"
 POSTGRES_CONTAINER="enterprise-etl-postgres-${RUN_SUFFIX}"
 HOP_CONTAINER="enterprise-etl-hop-${RUN_SUFFIX}"
+RUNTIME_DIR="$(mktemp -d)"
+RUNTIME_ENV_FILE="${RUNTIME_DIR}/runtime.json"
 
 POSTGRES_DB="etl_audit"
 POSTGRES_USER="etl_user"
@@ -22,6 +24,7 @@ cleanup() {
   docker rm -f "${HOP_CONTAINER}" >/dev/null 2>&1 || true
   docker rm -f "${POSTGRES_CONTAINER}" >/dev/null 2>&1 || true
   docker network rm "${NETWORK_NAME}" >/dev/null 2>&1 || true
+  rm -rf "${RUNTIME_DIR}"
 }
 trap cleanup EXIT
 
@@ -52,23 +55,34 @@ if [[ "${postgres_ready}" -ne 1 ]]; then
   exit 1
 fi
 
+cat > "${RUNTIME_ENV_FILE}" <<EOF
+{
+  "variables": [
+    {"name":"POSTGRES_HOST","value":"${POSTGRES_CONTAINER}","description":"CI PostgreSQL host"},
+    {"name":"POSTGRES_PORT","value":"5432","description":"CI PostgreSQL port"},
+    {"name":"POSTGRES_DB","value":"${POSTGRES_DB}","description":"CI synthetic database"},
+    {"name":"POSTGRES_USER","value":"${POSTGRES_USER}","description":"CI synthetic database user"},
+    {"name":"POSTGRES_PASSWORD","value":"${POSTGRES_PASSWORD}","description":"CI synthetic database credential"}
+  ]
+}
+EOF
+chmod 600 "${RUNTIME_ENV_FILE}"
+
 docker run -d \
   --name "${HOP_CONTAINER}" \
   --network "${NETWORK_NAME}" \
   -p "127.0.0.1:${HOP_SMOKE_PORT}:8181" \
   -e HOP_PROJECT_FOLDER=/files/project \
   -e HOP_PROJECT_NAME=enterprise-etl \
+  -e HOP_ENVIRONMENT_NAME=runtime \
+  -e HOP_ENVIRONMENT_CONFIG_FILE_NAME_PATHS=/files/environment/runtime.json \
   -e HOP_SERVER_HOSTNAME=0.0.0.0 \
   -e HOP_SERVER_PORT=8181 \
   -e HOP_SERVER_USER="${HOP_USER}" \
   -e HOP_SERVER_PASS="${HOP_PASS}" \
   -e HOP_LOG_LEVEL=Basic \
-  -e POSTGRES_HOST="${POSTGRES_CONTAINER}" \
-  -e POSTGRES_PORT=5432 \
-  -e POSTGRES_DB="${POSTGRES_DB}" \
-  -e POSTGRES_USER="${POSTGRES_USER}" \
-  -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
   -v "${ROOT_DIR}/hop/projects/enterprise-etl:/files/project:ro" \
+  -v "${RUNTIME_ENV_FILE}:/files/environment/runtime.json:ro" \
   "${HOP_IMAGE}" >/dev/null
 
 status_url="http://127.0.0.1:${HOP_SMOKE_PORT}/hop/status/?json=Y"
