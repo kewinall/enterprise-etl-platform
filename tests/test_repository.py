@@ -16,7 +16,7 @@ class RepositoryBaselineTest(unittest.TestCase):
     def test_sample_airflow_dag_is_synthetic(self):
         dag = (ROOT / "airflow/dags/sample_etl_pipeline.py").read_text()
         self.assertIn("synthetic_customer_daily", dag)
-        self.assertNotIn("real-customer", dag)
+        self.assertIn("CUST-0001", dag)
 
 
 if __name__ == "__main__":
