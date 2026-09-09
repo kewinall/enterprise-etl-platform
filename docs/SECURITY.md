@@ -2,55 +2,78 @@
 
 ## 繁體中文
 
-### v0.3 Security baseline
+### v0.4 Security baseline
 
 1. **Secret Scan**：Repository policy + Trivy secret scanner。
 2. **Trivy**：PR 與 main 執行 filesystem vulnerability / secret scan。
-3. **SBOM**：產生 CycloneDX JSON。
-4. **Executable CI**：實際啟動 PostgreSQL + Hop，驗證 audit/retry/persistence。
-5. **Synthetic-only**：Sample Data、Hostname、Credential、Schema 全為 generic。
-6. **Credential injection**：Hop RDBMS metadata 使用 runtime variables，不保存真實 password。
-7. **Audit minimization**：`error_message` 只記錄錯誤摘要，不記錄 Credential、token 或完整敏感 payload。
+3. **Repository SBOM**：Security workflow 產生 CycloneDX JSON。
+4. **Image SBOM**：v0.4 offline bundle 使用 Syft 產生 CycloneDX image SBOM。
+5. **Executable ETL CI**：PostgreSQL + Hop audit/retry/persistence。
+6. **Executable Supply-Chain CI**：build / promote / checksum / signing / offline load。
+7. **Synthetic-only**：Sample Data、Hostname、Credential、Schema 全為 generic。
+8. **Runtime credential injection**：真實 Secret 不 bake 進 runtime image。
 
-### PostgreSQL connection
+### Image security boundary
 
-`metadata/rdbms/audit-postgres.json` 只包含：
+Runtime image包含：
 
-```text
-${POSTGRES_HOST}
-${POSTGRES_PORT}
-${POSTGRES_DB}
-${POSTGRES_USER}
-${POSTGRES_PASSWORD}
-```
+- Apache Hop runtime
+- ETL project
+- generic metadata
+- provenance labels
 
-正式環境應由 Secret manager、Vault、Kubernetes Secret、CI protected variable 或等價機制注入。
+Runtime image不應包含：
 
-### Audit data 本身也是敏感資料
+- production database password
+- API token
+- private signing key
+- customer data
+- environment-specific production endpoint
 
-即使不含業務 payload，audit table 仍可能揭露：
+### Signing
 
-- pipeline name
-- 執行時間
-- failure pattern
-- deployment/environment pattern
+`create_offline_bundle.sh` 支援：
 
-正式環境應限制 SELECT/UPDATE 權限，並對 audit retention、backup、log export 建立政策。
+`SIGNING_PRIVATE_KEY=/secure/path/key.pem`
 
-### Airflow → Hop
+若沒有提供，CI 只會建立 ephemeral key 來測試流程。
 
-- Hop Server 放在 private network。
-- 跨不受信任網段使用 TLS。
-- 限制 execution endpoint 的 runtime identity。
-- 不掛載 Docker socket 給 Airflow。
-- local Basic Auth sample 不是 production credential。
+**Ephemeral CI key 不是 production trust anchor。**
+
+正式 signing private key 應存放於：
+
+- HSM
+- Vault
+- CI protected secret
+- 其他受控 signing service
+
+Trusted public key 應透過獨立可信任管道配送到 Air-Gapped environment。
+
+### Verification
+
+Offline environment 先驗：
+
+1. detached signature
+2. archive SHA-256
+3. internal SHA256SUMS signature
+4. individual file checksums
+5. loaded image ID
+
+驗證未完成前不得部署。
+
+### PostgreSQL / Airflow / Hop
+
+v0.3 原有規則維持：
+
+- PostgreSQL metadata 使用 runtime variables。
+- Audit error 不保存 Credential/token/full sensitive payload。
+- Hop Server 應位於 private network。
+- 不把 Docker socket 掛給 Airflow runtime。
 
 ## English
 
-v0.3 keeps secret scanning, Trivy, CycloneDX SBOM generation, synthetic-only configuration, and executable integration testing.
+v0.4 adds image-level SBOM generation, signed/checksummed offline bundles, immutable image identity checks, and executable supply-chain validation.
 
-The Hop PostgreSQL metadata contains runtime variable expressions rather than real credentials. Production credentials must come from an appropriate secret-management system.
+Real credentials and signing private keys are never baked into the runtime image. CI may use an ephemeral key only to prove the mechanism; production signing keys must come from protected external key management.
 
-Audit records are operationally sensitive even when they contain no business payload. Apply least-privilege database permissions, retention rules, backup controls, and secure log/export handling.
-
-Error messages must remain concise summaries and must not contain credentials, tokens, or full sensitive payloads.
+An air-gapped environment must verify the detached signature, archive checksum, internal signed checksums, and loaded image identity before deployment.
