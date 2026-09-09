@@ -58,7 +58,10 @@ class RepositoryBaselineTest(unittest.TestCase):
         transform_types = {
             transform.findtext("type") for transform in root.findall("./transform")
         }
-        self.assertTrue({"RowGenerator", "Sequence", "TableOutput"} <= transform_types)
+        self.assertTrue(
+            {"RowGenerator", "GetVariable", "Sequence", "TableOutput"}
+            <= transform_types
+        )
 
         parameters = {
             parameter.findtext("name")
@@ -84,10 +87,11 @@ class RepositoryBaselineTest(unittest.TestCase):
         )
         root = ElementTree.parse(pipeline).getroot()
         self.assertEqual(root.findtext("./info/name"), "audit_execution_start")
-        self.assertIn(
-            "TableOutput",
-            {transform.findtext("type") for transform in root.findall("./transform")},
-        )
+        transform_types = {
+            transform.findtext("type") for transform in root.findall("./transform")
+        }
+        self.assertIn("GetVariable", transform_types)
+        self.assertIn("TableOutput", transform_types)
         self.assertIn("RUNNING", pipeline.read_text())
 
     def test_audit_finalize_pipeline_updates_attempt(self):
@@ -97,10 +101,11 @@ class RepositoryBaselineTest(unittest.TestCase):
         )
         root = ElementTree.parse(pipeline).getroot()
         self.assertEqual(root.findtext("./info/name"), "audit_execution_finalize")
-        self.assertIn(
-            "Update",
-            {transform.findtext("type") for transform in root.findall("./transform")},
-        )
+        transform_types = {
+            transform.findtext("type") for transform in root.findall("./transform")
+        }
+        self.assertIn("GetVariable", transform_types)
+        self.assertIn("Update", transform_types)
         text = pipeline.read_text()
         self.assertIn("FINAL_STATUS", text)
         self.assertIn("ERROR_MESSAGE", text)
@@ -121,15 +126,26 @@ class RepositoryBaselineTest(unittest.TestCase):
         ):
             self.assertIn(token, dag)
 
-    def test_compose_passes_postgres_runtime_to_hop(self):
+    def test_compose_registers_hop_environment_for_postgres(self):
         compose = (ROOT / "docker-compose.yml").read_text()
         self.assertIn("apache/hop:2.19.0", compose)
-        self.assertIn("POSTGRES_HOST: postgres", compose)
+        self.assertIn("HOP_ENVIRONMENT_NAME: compose", compose)
+        self.assertIn(
+            "HOP_ENVIRONMENT_CONFIG_FILE_NAME_PATHS: /files/environment/compose.json",
+            compose,
+        )
+        self.assertIn("./hop/environments/compose.json", compose)
         self.assertIn("HOP_AUDIT_START_PATH", compose)
         self.assertIn("HOP_AUDIT_FINALIZE_PATH", compose)
 
+        environment = json.loads((ROOT / "hop/environments/compose.json").read_text())
+        variables = {item["name"]: item["value"] for item in environment["variables"]}
+        self.assertEqual(variables["POSTGRES_HOST"], "postgres")
+        self.assertEqual(variables["POSTGRES_PORT"], "5432")
+
     def test_lifecycle_smoke_validates_retry_and_persistence(self):
         smoke = (ROOT / "scripts/etl_lifecycle_smoke.sh").read_text()
+        self.assertIn("HOP_ENVIRONMENT_CONFIG_FILE_NAME_PATHS", smoke)
         self.assertIn("1:FAILED:0:synthetic retry validation", smoke)
         self.assertIn("2:SUCCESS:3:", smoke)
         self.assertIn("STARTED,FAILED,STARTED,SUCCEEDED", smoke)
