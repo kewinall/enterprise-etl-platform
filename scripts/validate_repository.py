@@ -17,6 +17,7 @@ REQUIRED_DOCS = [
     "docs/ORCHESTRATION.md",
     "docs/AUDIT_LIFECYCLE.md",
     "docs/SUPPLY_CHAIN.md",
+    "docs/SLO_ALERTING.md",
 ]
 FORBIDDEN_TOKENS = [
     "10." + "0.0.",
