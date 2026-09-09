@@ -3,154 +3,73 @@
   <info>
     <name>synthetic_customer_daily</name>
     <name_sync_with_filename>Y</name_sync_with_filename>
-    <description>v0.2 synthetic pipeline for Airflow-to-Hop orchestration validation</description>
-    <extended_description>Generates generic synthetic rows, adds a sequence, and writes the rows to the Hop execution log.</extended_description>
-    <pipeline_version>0.2.0</pipeline_version>
-    <pipeline_type>Normal</pipeline_type>
+    <description>Persist deterministic synthetic ETL rows into PostgreSQL.</description>
+    <extended_description>v0.3 keeps source data generic while persisting run/attempt correlation for auditable ETL validation.</extended_description>
+    <pipeline_version>0.3.0</pipeline_version><pipeline_type>Normal</pipeline_type>
     <parameters>
-      <parameter>
-        <name>RUN_ENV</name>
-        <default_value>DEV</default_value>
-        <description>Generic lifecycle environment name</description>
-      </parameter>
+      <parameter><name>RUN_ENV</name><default_value>DEV</default_value></parameter>
+      <parameter><name>RUN_ID</name><default_value>synthetic-local-run</default_value></parameter>
+      <parameter><name>ATTEMPT_NUMBER</name><default_value>1</default_value></parameter>
+      <parameter><name>CORRELATION_ID</name><default_value>synthetic-local-correlation</default_value></parameter>
     </parameters>
-    <capture_transform_performance>N</capture_transform_performance>
-    <transform_performance_capturing_delay>1000</transform_performance_capturing_delay>
-    <transform_performance_capturing_size_limit>100</transform_performance_capturing_size_limit>
-    <created_user>portfolio</created_user>
-    <created_date>2026/09/09 00:00:00.000</created_date>
-    <modified_user>portfolio</modified_user>
-    <modified_date>2026/09/09 00:00:00.000</modified_date>
-    <key_for_session_key/>
-    <is_key_private>N</is_key_private>
+    <capture_transform_performance>N</capture_transform_performance><transform_performance_capturing_delay>1000</transform_performance_capturing_delay><transform_performance_capturing_size_limit>100</transform_performance_capturing_size_limit>
+    <created_user>portfolio</created_user><created_date>2026/09/09 00:00:00.000</created_date><modified_user>portfolio</modified_user><modified_date>2026/09/09 00:00:00.000</modified_date>
   </info>
-  <notepads>
-  </notepads>
+  <notepads/>
   <order>
-    <hop>
-      <from>Generate synthetic rows</from>
-      <to>Add record sequence</to>
-      <enabled>Y</enabled>
-    </hop>
-    <hop>
-      <from>Add record sequence</from>
-      <to>Log synthetic rows</to>
-      <enabled>Y</enabled>
-    </hop>
+    <hop><from>Generate synthetic rows</from><to>Resolve execution context</to><enabled>Y</enabled></hop>
+    <hop><from>Resolve execution context</from><to>Add record sequence</to><enabled>Y</enabled></hop>
+    <hop><from>Add record sequence</from><to>Persist synthetic rows</to><enabled>Y</enabled></hop>
   </order>
   <transform>
-    <name>Generate synthetic rows</name>
-    <type>RowGenerator</type>
-    <description>Generate generic sample records only.</description>
-    <distribute>Y</distribute>
-    <custom_distribution/>
-    <copies>1</copies>
-    <partitioning>
-      <method>none</method>
-      <schema_name/>
-    </partitioning>
+    <name>Generate synthetic rows</name><type>RowGenerator</type>
+    <description>Generate three deterministic generic source records.</description>
+    <distribute>Y</distribute><copies>1</copies><partitioning><method>none</method><schema_name/></partitioning>
     <fields>
-      <field>
-        <length>-1</length>
-        <name>customer_segment</name>
-        <precision>-1</precision>
-        <set_empty_string>N</set_empty_string>
-        <type>String</type>
-        <nullif>synthetic-retail</nullif>
-      </field>
-      <field>
-        <length>-1</length>
-        <name>source_system</name>
-        <precision>-1</precision>
-        <set_empty_string>N</set_empty_string>
-        <type>String</type>
-        <nullif>generic-crm</nullif>
-      </field>
-      <field>
-        <length>-1</length>
-        <name>amount_text</name>
-        <precision>-1</precision>
-        <set_empty_string>N</set_empty_string>
-        <type>String</type>
-        <nullif>120.50</nullif>
-      </field>
-      <field>
-        <length>-1</length>
-        <name>environment_name</name>
-        <precision>-1</precision>
-        <set_empty_string>N</set_empty_string>
-        <type>String</type>
-        <nullif>${RUN_ENV}</nullif>
-      </field>
+      <field><length>-1</length><name>customer_segment</name><precision>-1</precision><set_empty_string>N</set_empty_string><type>String</type><nullif>synthetic-retail</nullif></field>
+      <field><length>-1</length><name>source_system</name><precision>-1</precision><set_empty_string>N</set_empty_string><type>String</type><nullif>generic-crm</nullif></field>
+      <field><length>-1</length><name>amount</name><precision>2</precision><set_empty_string>N</set_empty_string><type>Number</type><nullif>120.50</nullif></field>
     </fields>
-    <limit>3</limit>
-    <never_ending>N</never_ending>
-    <interval_in_ms>5000</interval_in_ms>
-    <row_time_field>now</row_time_field>
-    <last_time_field>FiveSecondsAgo</last_time_field>
-    <attributes/>
-    <GUI>
-      <xloc>112</xloc>
-      <yloc>128</yloc>
-    </GUI>
+    <limit>3</limit><never_ending>N</never_ending><interval_in_ms>5000</interval_in_ms><row_time_field>now</row_time_field><last_time_field>FiveSecondsAgo</last_time_field>
+    <attributes/><GUI><xloc>80</xloc><yloc>128</yloc></GUI>
   </transform>
   <transform>
-    <name>Add record sequence</name>
-    <type>Sequence</type>
-    <description>Add a deterministic synthetic record identifier.</description>
-    <distribute>Y</distribute>
-    <custom_distribution/>
-    <copies>1</copies>
-    <partitioning>
-      <method>none</method>
-      <schema_name/>
-    </partitioning>
-    <valuename>record_id</valuename>
-    <use_database>N</use_database>
-    <connection/>
-    <schema/>
-    <seqname>SEQ_</seqname>
-    <use_counter>Y</use_counter>
-    <counter_name/>
-    <start_at>1</start_at>
-    <increment_by>1</increment_by>
-    <max_value>999999999</max_value>
-    <attributes/>
-    <GUI>
-      <xloc>336</xloc>
-      <yloc>128</yloc>
-    </GUI>
+    <name>Resolve execution context</name><type>GetVariable</type>
+    <description>Resolve environment, run, retry, and correlation fields after parameter activation.</description>
+    <distribute>Y</distribute><copies>1</copies><partitioning><method>none</method><schema_name/></partitioning>
+    <fields>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>environment_name</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>${RUN_ENV}</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>run_id</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>${RUN_ID}</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>attempt_number</name><precision>0</precision><trim_type>none</trim_type><type>Integer</type><variable>${ATTEMPT_NUMBER}</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>correlation_id</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>${CORRELATION_ID}</variable></field>
+    </fields>
+    <attributes/><GUI><xloc>288</xloc><yloc>128</yloc></GUI>
   </transform>
   <transform>
-    <name>Log synthetic rows</name>
-    <type>WriteToLog</type>
-    <description>Expose v0.2 pipeline output in Hop logs without persisting customer-like data.</description>
-    <distribute>Y</distribute>
-    <custom_distribution/>
-    <copies>1</copies>
-    <partitioning>
-      <method>none</method>
-      <schema_name/>
-    </partitioning>
-    <loglevel>log_level_basic</loglevel>
-    <displayHeader>Y</displayHeader>
-    <limitRows>N</limitRows>
-    <limitRowsNumber>0</limitRowsNumber>
-    <logmessage>v0.2 synthetic_customer_daily output</logmessage>
-    <fields>
-      <field><name>record_id</name></field>
-      <field><name>customer_segment</name></field>
-      <field><name>source_system</name></field>
-      <field><name>amount_text</name></field>
-      <field><name>environment_name</name></field>
-    </fields>
-    <attributes/>
-    <GUI>
-      <xloc>560</xloc>
-      <yloc>128</yloc>
-    </GUI>
+    <name>Add record sequence</name><type>Sequence</type>
+    <description>Add deterministic record_id values 1..3 for the attempt.</description>
+    <distribute>Y</distribute><copies>1</copies><partitioning><method>none</method><schema_name/></partitioning>
+    <valuename>record_id</valuename><use_database>N</use_database><connection/><schema/><seqname>SEQ_</seqname><use_counter>Y</use_counter><counter_name/><start_at>1</start_at><increment_by>1</increment_by><max_value>999999999</max_value>
+    <attributes/><GUI><xloc>496</xloc><yloc>128</yloc></GUI>
   </transform>
-  <transform_error_handling>
-  </transform_error_handling>
-  <attributes/>
+  <transform>
+    <name>Persist synthetic rows</name><type>TableOutput</type>
+    <description>Persist synthetic output with run/attempt correlation.</description>
+    <distribute>Y</distribute><copies>1</copies><partitioning><method>none</method><schema_name/></partitioning>
+    <commit>3</commit><connection>audit-postgres</connection>
+    <fields>
+      <field><column_name>run_id</column_name><stream_name>run_id</stream_name></field>
+      <field><column_name>attempt_number</column_name><stream_name>attempt_number</stream_name></field>
+      <field><column_name>record_id</column_name><stream_name>record_id</stream_name></field>
+      <field><column_name>customer_segment</column_name><stream_name>customer_segment</stream_name></field>
+      <field><column_name>source_system</column_name><stream_name>source_system</stream_name></field>
+      <field><column_name>amount</column_name><stream_name>amount</stream_name></field>
+      <field><column_name>environment_name</column_name><stream_name>environment_name</stream_name></field>
+      <field><column_name>correlation_id</column_name><stream_name>correlation_id</stream_name></field>
+    </fields>
+    <ignore_errors>N</ignore_errors><only_when_have_rows>N</only_when_have_rows><partitioning_daily>N</partitioning_daily><partitioning_enabled>N</partitioning_enabled><partitioning_monthly>N</partitioning_monthly>
+    <return_keys>N</return_keys><schema>etl_data</schema><specify_fields>Y</specify_fields><table>synthetic_customer_daily</table><tablename_in_field>N</tablename_in_field><tablename_in_table>Y</tablename_in_table><truncate>N</truncate><use_batch>N</use_batch><attributes/>
+    <GUI><xloc>720</xloc><yloc>128</yloc></GUI>
+  </transform>
+  <transform_error_handling/><attributes/>
 </pipeline>

@@ -4,52 +4,66 @@
 
 ### Lifecycle
 
-`Design → Develop → Validate → Execute Smoke Test → Security Scan → Package → TEST → Approve → Promote → PROD → Observe → Audit`
+`Design → Develop → Validate → Lifecycle Smoke → Security Scan → Package → TEST → Approve → Promote → PROD → Observe → Audit`
 
-v0.2 在 `Validate` 與 Security gate 之間加入 **real Hop execution smoke test**，避免只有 syntax/config validation。
+v0.3 的 governance 不只看 deployment version，也要求每次 ETL execution 可回溯到：
+
+- `run_id`
+- `attempt_number`
+- `correlation_id`
+- final status
+- records written
+- error summary
+- target rows
+
+### Retry governance
+
+每個 retry 必須建立新的 attempt，不覆蓋失敗歷史：
+
+```text
+run_id = X / attempt 1 / FAILED
+run_id = X / attempt 2 / SUCCESS
+```
+
+這可區分「第一次失敗後成功」與「第一次就成功」。
+
+### Status transition
+
+允許的主流程：
+
+- `RUNNING → SUCCESS`
+- `RUNNING → FAILED`
+
+Retry 是新的 execution row，不是把 `FAILED` 改回 `RUNNING`。
+
+PostgreSQL trigger 會建立 append-only lifecycle event，並在 final state 寫入 `finished_at`。
+
+### Data traceability
+
+`etl_data.synthetic_customer_daily` 保存 `run_id + attempt_number + correlation_id`，讓資料落地可以回查 execution history。
 
 ### Environment separation
 
-| Environment | Purpose | Artifact rule |
+| Environment | Purpose | Governance |
 |---|---|---|
-| DEV | 開發與快速驗證 | 可建立 candidate artifact |
-| TEST | 整合與驗收 | 僅使用 CI 驗證的 immutable artifact |
-| PROD | 正式執行 | promotion TEST 驗證的同一 digest |
-
-`PLATFORM_ENV` 由 Airflow 傳入 Hop 的 `RUN_ENV`。Infrastructure-specific Credential 不屬於 pipeline source code。
+| DEV | 開發與快速驗證 | synthetic/local candidate |
+| TEST | Integration / acceptance | 必須通過 audit lifecycle test |
+| PROD | 正式執行 | promotion 已驗證 artifact；Credential runtime injection |
 
 ### Release gate
 
-`.github/workflows/release.yml`：
+Tag / Release 仍只在同一 main commit 的 CI 與 Security 都成功後建立。v0.3 CI 已包含 PostgreSQL + Hop 的 lifecycle smoke test。
 
-1. 等待 main CI 成功。
-2. 尋找同一 commit 的 Security workflow。
-3. 等 Security 成功。
-4. 讀取 `VERSION`。
-5. 要求存在 `docs/releases/vX.Y.Z.md` 雙語 notes。
-6. 建立 Tag 與 GitHub Release。
+### 後續
 
-因此 Tag 不會指向未通過 CI/Security 的 commit。
-
-### Promotion policy
-
-- PROD 不 rebuild。
-- rollback 使用前一個 approved digest/tag。
-- Deployment configuration 與 Credential 分離。
-- Release metadata、SBOM、checksum 應跟 artifact 一起保存。
-
-### Air-Gapped transfer
-
-離線 bundle 應包含 approved image archive、SBOM、checksum、release metadata、deployment configuration template；真實 Credential 在目標環境內注入。
+Container artifact promotion、offline bundle、checksum/signing 為 v0.4。
 
 ## English
 
-### Lifecycle
+v0.3 adds execution governance to deployment governance. Every retry is a distinct execution attempt identified by run ID, attempt number, and correlation ID.
 
-`Design → Develop → Validate → Execute Smoke Test → Security Scan → Package → TEST → Approve → Promote → PROD → Observe → Audit`
+Valid final transitions are `RUNNING → SUCCESS` and `RUNNING → FAILED`. A retry creates a new row; failed history is never rewritten as a new RUNNING attempt.
 
-v0.2 adds a real Hop execution smoke test before release. Environment-specific credentials remain outside pipeline source code.
+Persisted target rows carry the same execution identity, enabling data-to-execution traceability.
 
-The release gate waits for CI and the matching Security workflow on the same main commit, reads `VERSION`, requires bilingual version-specific release notes, and only then creates the tag and GitHub Release.
-
-Production must promote the artifact already validated in TEST rather than rebuilding it. Air-gapped bundles should include approved images, SBOMs, checksums, release metadata, and configuration templates, with real credentials injected in the target environment.
+The release gate still requires successful CI and Security on the same main commit; v0.3 CI now includes the PostgreSQL/Hop lifecycle integration test.

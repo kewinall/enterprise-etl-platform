@@ -2,74 +2,73 @@
 
 ## 繁體中文
 
-### [0.2.0] - 2026-09-09
+### [0.3.0] - 2026-09-09
 
 #### Added
 
-- Executable `synthetic_customer_daily.hpl`
-- Apache Hop project configuration
-- Hop Server Docker Compose runtime
-- Airflow `hop_synthetic_customer_daily` orchestration DAG
-- Authenticated `/hop/execPipeline` integration
-- `RUN_ENV` lifecycle parameter passing
-- Real Hop Server API smoke test in CI
-- Version-specific bilingual Release notes
+- PostgreSQL v0.3 audit lifecycle migration
+- `correlation_id`、`attempt_number`、`trigger_type`
+- `etl_audit.etl_execution_event`
+- STARTED / SUCCEEDED / FAILED database-trigger events
+- `etl_data.synthetic_customer_daily` persisted target
+- Hop `audit-postgres` variable-driven metadata
+- `audit_execution_start.hpl`
+- `audit_execution_finalize.hpl`
+- Retry-aware Airflow lifecycle
+- PostgreSQL + Hop integration smoke test
+- `docs/AUDIT_LIFECYCLE.md`
 
 #### Changed
 
-- Apache Hop image updated from 2.15.0 to 2.19.0
-- Release workflow changed from v0.1-specific notes to version-aware gated notes
-- v0.1 mock DAG replaced by real Hop orchestration
+- `synthetic_customer_daily.hpl` now persists data to PostgreSQL
+- CI now validates failed-attempt + successful-retry lifecycle
+
+### [0.2.0] - 2026-09-09
+
+- Executable Airflow → Hop Server integration
+- Apache Hop 2.19.0
+- Real Hop Server API smoke test
+- Version-aware Release notes
 
 ### [0.1.0] - 2026-09-09
 
-#### Added
-
-- Enterprise Data Engineering Platform project foundation
-- Apache Airflow orchestration skeleton
-- Apache Hop project workspace
-- PostgreSQL ETL execution audit schema
-- Docker Compose runtime baseline
-- DEV / TEST / PROD sample configurations
-- GitHub Actions CI and Security workflows
-- Trivy filesystem/secret scanning
-- CycloneDX SBOM generation
-- GitLab-style CI/CD example
-- Air-Gapped and immutable promotion governance documentation
+- Enterprise Data Engineering Platform foundation
+- PostgreSQL audit baseline
+- Docker Compose / DEV TEST PROD
+- CI / Security / Trivy / SBOM
 
 ## English
 
-### [0.2.0] - 2026-09-09
+### [0.3.0] - 2026-09-09
 
 #### Added
 
-- Executable `synthetic_customer_daily.hpl`
-- Apache Hop project configuration
-- Hop Server Docker Compose runtime
-- Airflow `hop_synthetic_customer_daily` orchestration DAG
-- Authenticated `/hop/execPipeline` integration
-- `RUN_ENV` lifecycle parameter passing
-- Real Hop Server API smoke test in CI
-- Version-specific bilingual release notes
+- PostgreSQL v0.3 audit lifecycle migration
+- `correlation_id`, `attempt_number`, and `trigger_type`
+- `etl_audit.etl_execution_event`
+- database-triggered STARTED / SUCCEEDED / FAILED events
+- persisted `etl_data.synthetic_customer_daily`
+- variable-driven Hop PostgreSQL metadata
+- audit start/finalize Hop pipelines
+- retry-aware Airflow lifecycle
+- PostgreSQL + Hop integration smoke test
+- `docs/AUDIT_LIFECYCLE.md`
 
 #### Changed
 
-- Apache Hop image updated from 2.15.0 to 2.19.0
-- Release workflow changed from v0.1-specific notes to version-aware gated notes
-- Replaced the v0.1 mock DAG with real Hop orchestration
+- The main synthetic pipeline now persists rows to PostgreSQL
+- CI now proves a failed attempt and successful retry remain separately auditable
+
+### [0.2.0] - 2026-09-09
+
+- Executable Airflow-to-Hop Server integration
+- Apache Hop 2.19.0
+- Real Hop Server API smoke test
+- Version-aware release notes
 
 ### [0.1.0] - 2026-09-09
 
-#### Added
-
-- Enterprise Data Engineering Platform project foundation
-- Apache Airflow orchestration skeleton
-- Apache Hop project workspace
-- PostgreSQL ETL execution audit schema
-- Docker Compose runtime baseline
-- DEV / TEST / PROD sample configurations
-- GitHub Actions CI and Security workflows
-- Trivy filesystem/secret scanning
-- CycloneDX SBOM generation
-- GitLab-style CI/CD example
-- Air-Gapped and immutable promotion governance documentation
+- Enterprise Data Engineering Platform foundation
+- PostgreSQL audit baseline
+- Docker Compose / DEV TEST PROD
+- CI / Security / Trivy / SBOM

@@ -8,6 +8,7 @@ stages:
 variables:
   IMAGE_NAME: "$CI_REGISTRY_IMAGE/enterprise-etl"
   HOP_IMAGE: "apache/hop:2.19.0"
+  POSTGRES_IMAGE: "postgres:16-alpine"
 
 validate:
   stage: validate
@@ -19,7 +20,7 @@ test:
   stage: test
   script:
     - python -m unittest discover -s tests -v
-    - bash scripts/hop_api_smoke.sh
+    - bash scripts/etl_lifecycle_smoke.sh
 
 security:
   stage: security

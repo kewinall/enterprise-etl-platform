@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline>
+  <info>
+    <name>audit_execution_finalize</name>
+    <name_sync_with_filename>Y</name_sync_with_filename>
+    <description>Finalize one execution attempt as SUCCESS or FAILED.</description>
+    <pipeline_version>0.3.0</pipeline_version>
+    <pipeline_type>Normal</pipeline_type>
+    <parameters>
+      <parameter><name>RUN_ENV</name><default_value>DEV</default_value></parameter>
+      <parameter><name>RUN_ID</name><default_value>synthetic-local-run</default_value></parameter>
+      <parameter><name>ATTEMPT_NUMBER</name><default_value>1</default_value></parameter>
+      <parameter><name>FINAL_STATUS</name><default_value>SUCCESS</default_value></parameter>
+      <parameter><name>RECORDS_READ</name><default_value>3</default_value></parameter>
+      <parameter><name>RECORDS_WRITTEN</name><default_value>3</default_value></parameter>
+      <parameter><name>ERROR_MESSAGE</name><default_value></default_value></parameter>
+    </parameters>
+    <capture_transform_performance>N</capture_transform_performance>
+    <created_user>portfolio</created_user><created_date>2026/09/09 00:00:00.000</created_date>
+    <modified_user>portfolio</modified_user><modified_date>2026/09/09 00:00:00.000</modified_date>
+  </info>
+  <notepads/>
+  <order>
+    <hop><from>Generate one row</from><to>Resolve audit final fields</to><enabled>Y</enabled></hop>
+    <hop><from>Resolve audit final fields</from><to>Finalize execution attempt</to><enabled>Y</enabled></hop>
+  </order>
+  <transform>
+    <name>Generate one row</name><type>RowGenerator</type>
+    <description>Create one input row for runtime variable resolution.</description>
+    <distribute>Y</distribute><copies>1</copies><partitioning><method>none</method><schema_name/></partitioning>
+    <fields></fields><limit>1</limit><never_ending>N</never_ending><interval_in_ms>5000</interval_in_ms>
+    <row_time_field>now</row_time_field><last_time_field>FiveSecondsAgo</last_time_field>
+    <attributes/><GUI><xloc>80</xloc><yloc>112</yloc></GUI>
+  </transform>
+  <transform>
+    <name>Resolve audit final fields</name><type>GetVariable</type>
+    <description>Resolve final status, counters, and retry identity at execution time.</description>
+    <distribute>Y</distribute><copies>1</copies><partitioning><method>none</method><schema_name/></partitioning>
+    <fields>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>pipeline_name</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>synthetic_customer_daily</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>environment_name</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>${RUN_ENV}</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>run_id</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>${RUN_ID}</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>attempt_number</name><precision>0</precision><trim_type>none</trim_type><type>Integer</type><variable>${ATTEMPT_NUMBER}</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>status</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>${FINAL_STATUS}</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>records_read</name><precision>0</precision><trim_type>none</trim_type><type>Integer</type><variable>${RECORDS_READ}</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>records_written</name><precision>0</precision><trim_type>none</trim_type><type>Integer</type><variable>${RECORDS_WRITTEN}</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>error_message</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>${ERROR_MESSAGE}</variable></field>
+    </fields>
+    <attributes/><GUI><xloc>288</xloc><yloc>112</yloc></GUI>
+  </transform>
+  <transform>
+    <name>Finalize execution attempt</name><type>Update</type>
+    <description>Update final status; PostgreSQL trigger sets finished_at and lifecycle event.</description>
+    <distribute>Y</distribute><copies>1</copies><partitioning><method>none</method><schema_name/></partitioning>
+    <connection>audit-postgres</connection><skip_lookup>N</skip_lookup><commit>1</commit><use_batch>N</use_batch>
+    <error_ignored>N</error_ignored><ignore_flag_field/>
+    <lookup>
+      <schema>etl_audit</schema><table>etl_execution_log</table>
+      <key><name>pipeline_name</name><field>pipeline_name</field><condition>=</condition><name2/></key>
+      <key><name>environment_name</name><field>environment_name</field><condition>=</condition><name2/></key>
+      <key><name>run_id</name><field>run_id</field><condition>=</condition><name2/></key>
+      <key><name>attempt_number</name><field>attempt_number</field><condition>=</condition><name2/></key>
+      <value><name>status</name><rename>status</rename></value>
+      <value><name>records_read</name><rename>records_read</rename></value>
+      <value><name>records_written</name><rename>records_written</rename></value>
+      <value><name>error_message</name><rename>error_message</rename></value>
+    </lookup>
+    <attributes/><GUI><xloc>520</xloc><yloc>112</yloc></GUI>
+  </transform>
+  <transform_error_handling/><attributes/>
+</pipeline>

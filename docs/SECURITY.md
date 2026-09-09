@@ -2,43 +2,55 @@
 
 ## 繁體中文
 
-### Security baseline
+### v0.3 Security baseline
 
-1. **Secret Scan**：`scripts/secret_scan.py` + Trivy secret scanner。
-2. **Trivy**：Pull Request 與 main push 執行 filesystem vulnerability / secret scan。
-3. **SBOM**：Security workflow 產生 CycloneDX JSON SBOM。
-4. **Executable CI**：v0.2 CI 實際啟動 Hop Server 並呼叫 pipeline execution endpoint。
-5. **Synthetic-only**：Sample Data、Hostname、Schema、Credential 只使用 synthetic/generic values。
-6. **Immutable promotion**：PROD 應 promotion TEST 驗證過的同一 artifact/image digest。
-7. **Air-Gapped**：只轉移 approved image、SBOM、configuration、checksum、release metadata。
+1. **Secret Scan**：Repository policy + Trivy secret scanner。
+2. **Trivy**：PR 與 main 執行 filesystem vulnerability / secret scan。
+3. **SBOM**：產生 CycloneDX JSON。
+4. **Executable CI**：實際啟動 PostgreSQL + Hop，驗證 audit/retry/persistence。
+5. **Synthetic-only**：Sample Data、Hostname、Credential、Schema 全為 generic。
+6. **Credential injection**：Hop RDBMS metadata 使用 runtime variables，不保存真實 password。
+7. **Audit minimization**：`error_message` 只記錄錯誤摘要，不記錄 Credential、token 或完整敏感 payload。
 
-### Airflow → Hop Server
+### PostgreSQL connection
 
-v0.2 使用 Hop Server Basic Auth。Repository 中的：
+`metadata/rdbms/audit-postgres.json` 只包含：
 
-- `hop-user`
-- `synthetic-hop-password`
+```text
+${POSTGRES_HOST}
+${POSTGRES_PORT}
+${POSTGRES_DB}
+${POSTGRES_USER}
+${POSTGRES_PASSWORD}
+```
 
-只是 local synthetic defaults，不是正式 Credential。
+正式環境應由 Secret manager、Vault、Kubernetes Secret、CI protected variable 或等價機制注入。
 
-正式環境要求：
+### Audit data 本身也是敏感資料
 
-- Credential 由 Secret store 注入，不 commit。
-- Hop Server 應放在 private network。
-- 跨主機或不受信任網段應使用 TLS。
-- 僅 Airflow/runtime identity 可呼叫 execution endpoint。
-- 不應將 Docker socket 掛入 Airflow container。
+即使不含業務 payload，audit table 仍可能揭露：
 
-### Repository policy
+- pipeline name
+- 執行時間
+- failure pattern
+- deployment/environment pattern
 
-`.env` 被 `.gitignore` 排除；`.env.example` 只保留 generic values。主要文件與 Release notes 需同時包含繁體中文與 English。
+正式環境應限制 SELECT/UPDATE 權限，並對 audit retention、backup、log export 建立政策。
+
+### Airflow → Hop
+
+- Hop Server 放在 private network。
+- 跨不受信任網段使用 TLS。
+- 限制 execution endpoint 的 runtime identity。
+- 不掛載 Docker socket 給 Airflow。
+- local Basic Auth sample 不是 production credential。
 
 ## English
 
-### Security baseline
+v0.3 keeps secret scanning, Trivy, CycloneDX SBOM generation, synthetic-only configuration, and executable integration testing.
 
-v0.2 keeps layered repository and runtime controls: local secret-policy validation, Trivy filesystem/secret scanning, CycloneDX SBOM generation, executable Hop API smoke tests, synthetic-only configuration, immutable promotion guidance, and an air-gapped artifact-transfer model.
+The Hop PostgreSQL metadata contains runtime variable expressions rather than real credentials. Production credentials must come from an appropriate secret-management system.
 
-### Airflow to Hop Server boundary
+Audit records are operationally sensitive even when they contain no business payload. Apply least-privilege database permissions, retention rules, backup controls, and secure log/export handling.
 
-The repository contains synthetic local Basic Auth defaults only. In a real deployment, inject credentials from a secret manager, place Hop Server on a private network, use TLS across untrusted network boundaries, restrict execution endpoints to the Airflow/runtime identity, and do not expose the Docker socket to the Airflow container.
+Error messages must remain concise summaries and must not contain credentials, tokens, or full sensitive payloads.

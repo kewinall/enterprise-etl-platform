@@ -1,0 +1,9 @@
+{
+  "variables": [
+    {"name": "POSTGRES_HOST", "value": "postgres", "description": "Docker Compose PostgreSQL service"},
+    {"name": "POSTGRES_PORT", "value": "5432", "description": "Docker Compose PostgreSQL port"},
+    {"name": "POSTGRES_DB", "value": "etl_audit", "description": "Synthetic local database"},
+    {"name": "POSTGRES_USER", "value": "etl_user", "description": "Synthetic local database user"},
+    {"name": "POSTGRES_PASSWORD", "value": "synthetic-dev-password", "description": "Synthetic local credential only"}
+  ]
+}
