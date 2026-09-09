@@ -114,7 +114,7 @@ for _ in $(seq 1 30); do
 done
 
 metrics="$(curl --fail --silent http://127.0.0.1:19399/metrics)"
-for metric in   etl_pipeline_runs_total   etl_pipeline_retry_total   etl_records_written_total   etl_running_stale_total   etl_last_success_timestamp_seconds   etl_pipeline_duration_seconds   etl_pipeline_duration_p95_seconds; do
+for metric in   etl_pipeline_run_total   etl_pipeline_retry_total   etl_records_written_total   etl_running_stale_total   etl_last_success_timestamp_seconds   etl_pipeline_duration_seconds   etl_pipeline_duration_p95_seconds; do
   if ! grep -q "^# HELP ${metric} " <<<"${metrics}"; then
     echo "Missing exporter metric: ${metric}"
     exit 1
@@ -122,7 +122,7 @@ for metric in   etl_pipeline_runs_total   etl_pipeline_retry_total   etl_records
 done
 
 query_result="$(
-  curl --fail --silent --get     --data-urlencode 'query=etl_pipeline_runs_total{pipeline_name="synthetic_customer_daily",environment_name="TEST"}'     http://127.0.0.1:19090/api/v1/query
+  curl --fail --silent --get     --data-urlencode 'query=etl_pipeline_run_total{pipeline_name="synthetic_customer_daily",environment_name="TEST"}'     http://127.0.0.1:19090/api/v1/query
 )"
 printf '%s' "${query_result}" | python -c '
 import json, sys
