@@ -1,0 +1,55 @@
+groups:
+  - name: etl-slo-recording
+    interval: 5s
+    rules:
+      - record: etl:slo_success_ratio
+        expr: |
+          sum by (pipeline_name, environment_name) (
+            etl_pipeline_runs_total{status="SUCCESS"}
+          )
+          /
+          clamp_min(
+            sum by (pipeline_name, environment_name) (
+              etl_pipeline_runs_total{status=~"SUCCESS|FAILED"}
+            ),
+            1
+          )
+
+      - record: etl:slo_error_ratio
+        expr: 1 - etl:slo_success_ratio
+
+      - record: etl:slo_error_budget_remaining
+        expr: clamp_min(1 - (etl:slo_error_ratio / 0.01), 0)
+
+  - name: etl-alerts
+    interval: 5s
+    rules:
+      - alert: ETLPipelineSLOBreach
+        expr: etl:slo_success_ratio < 0.99
+        for: 0m
+        labels:
+          severity: warning
+          service: enterprise-etl
+        annotations:
+          summary: "ETL success SLO is below 99%"
+          description: "Pipeline {{ $labels.pipeline_name }} in {{ $labels.environment_name }} has success ratio {{ $value }}."
+
+      - alert: ETLStaleRunningExecution
+        expr: etl_running_stale_total > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: enterprise-etl
+        annotations:
+          summary: "ETL execution is stale"
+          description: "Pipeline {{ $labels.pipeline_name }} in {{ $labels.environment_name }} has stale RUNNING attempts."
+
+      - alert: ETLNoRecentSuccess
+        expr: (time() - etl_last_success_timestamp_seconds) > 3600 and etl_last_success_timestamp_seconds > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: enterprise-etl
+        annotations:
+          summary: "ETL has no recent success"
+          description: "Pipeline {{ $labels.pipeline_name }} in {{ $labels.environment_name }} has not succeeded within one hour."
