@@ -23,7 +23,7 @@ services:
       context: .
       dockerfile: docker/hop-runtime.Dockerfile
       args:
-        VERSION: ${PLATFORM_VERSION:-0.4.0}
+        VERSION: ${PLATFORM_VERSION:-0.5.0}
         VCS_REF: ${VCS_REF:-local}
     hostname: etl-hop
     profiles: ["etl", "orchestration"]
@@ -67,5 +67,65 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags:ro
 
+  sql-exporter:
+    image: ${SQL_EXPORTER_IMAGE:-burningalchemist/sql_exporter:0.24.8}
+    hostname: etl-sql-exporter
+    profiles: ["monitoring"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - -config.file=/config/sql_exporter.yml
+    ports:
+      - "9399:9399"
+    volumes:
+      - ./monitoring/sql-exporter:/config:ro
+
+  alertmanager:
+    image: ${ALERTMANAGER_IMAGE:-prom/alertmanager:v0.34.0}
+    hostname: etl-alertmanager
+    profiles: ["monitoring"]
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager:/etc/alertmanager:ro
+
+  prometheus:
+    image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.14.0}
+    hostname: etl-prometheus
+    profiles: ["monitoring"]
+    depends_on:
+      - sql-exporter
+      - alertmanager
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+
+  grafana:
+    image: ${GRAFANA_IMAGE:-grafana/grafana:13.2.1}
+    hostname: etl-grafana
+    profiles: ["monitoring"]
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-synthetic-grafana-password}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+
 volumes:
   postgres-data:
+  prometheus-data:
+  grafana-data:
