@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <pipeline>
-  <info><name>legacy_order_enrichment</name></info>
+  <info>
+    <name>legacy_order_enrichment</name>
+    <parameters>
+      <parameter><name>BATCH_DATE</name><default_value>2026-01-01</default_value><description>Synthetic batch date</description></parameter>
+    </parameters>
+  </info>
+  <variables>
+    <variable><name>TARGET_SCHEMA</name><value>analytics</value><scope>artifact</scope></variable>
+  </variables>
   <transform><name>Read Orders</name><type>TableInput</type><connection>legacy_dw</connection><schema>staging</schema><table>orders</table><sql>SELECT order_id, customer_id, amount, status FROM staging.orders WHERE business_date = '${BATCH_DATE}'</sql></transform>
   <transform><name>Filter Ready</name><type>FilterRows</type></transform>
   <transform><name>Customer Lookup</name><type>DatabaseLookup</type><connection>legacy_dw</connection><schema>dimensions</schema><table>customers</table></transform>
