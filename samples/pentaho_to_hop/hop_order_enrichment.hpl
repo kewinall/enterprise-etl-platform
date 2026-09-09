@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline>
+  <info><name>legacy_order_enrichment</name></info>
+  <transform><name>Read Orders</name><type>TableInput</type><connection>legacy_dw</connection><schema>staging</schema><table>orders</table><sql>SELECT order_id, customer_id, amount, status FROM staging.orders WHERE business_date = '${BATCH_DATE}'</sql></transform>
+  <transform><name>Filter Ready</name><type>FilterRows</type></transform>
+  <transform><name>Customer Lookup</name><type>DatabaseLookup</type><connection>legacy_dw</connection><schema>dimensions</schema><table>customers</table></transform>
+  <transform><name>Calculate Net</name><type>Calculator</type><fields><field><name>net_amount</name><type>Number</type></field></fields></transform>
+  <transform><name>Read Discounts</name><type>TableInput</type><connection>legacy_dw</connection><schema>staging</schema><table>discounts</table><sql>SELECT order_id, discount_amount FROM staging.discounts</sql></transform>
+  <transform><name>Join Discounts</name><type>MergeJoin</type></transform>
+  <transform><name>Write Orders</name><type>TableOutput</type><connection>analytics_dw</connection><schema>${TARGET_SCHEMA}</schema><table>orders_enriched</table></transform>
+  <order>
+    <hop><from>Read Orders</from><to>Filter Ready</to><enabled>Y</enabled></hop>
+    <hop><from>Filter Ready</from><to>Customer Lookup</to><enabled>Y</enabled></hop>
+    <hop><from>Customer Lookup</from><to>Calculate Net</to><enabled>Y</enabled></hop>
+    <hop><from>Calculate Net</from><to>Join Discounts</to><enabled>Y</enabled></hop>
+    <hop><from>Read Discounts</from><to>Join Discounts</to><enabled>Y</enabled></hop>
+    <hop><from>Join Discounts</from><to>Write Orders</to><enabled>Y</enabled></hop>
+  </order>
+</pipeline>
