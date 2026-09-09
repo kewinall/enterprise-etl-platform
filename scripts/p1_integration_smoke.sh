@@ -6,7 +6,6 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 cd "$ROOT"
-export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
 
 python "$ROOT/scripts/migration_case.py"   "$ROOT/samples/pentaho_to_hop/legacy_order_enrichment.ktr"   --target "$ROOT/samples/pentaho_to_hop/hop_order_enrichment.hpl"   --output "$TMP/migration-report.json"
 
