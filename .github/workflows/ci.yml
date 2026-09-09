@@ -34,6 +34,9 @@ jobs:
       - name: Execute PostgreSQL audit/retry/persistence lifecycle smoke test
         run: bash scripts/etl_lifecycle_smoke.sh
 
+      - name: Execute Prometheus/Grafana/SLO/alert observability smoke test
+        run: bash scripts/observability_smoke.sh
+
       - name: Execute immutable image promotion/offline bundle smoke test
         run: bash scripts/supply_chain_smoke.sh
 
