@@ -11,6 +11,49 @@
 
 `enterprise-etl-platform` 是以 **Enterprise Data Engineering Platform** 為核心的作品集專案，涵蓋 ETL/ELT execution、Airflow orchestration、Apache Hop runtime、PostgreSQL audit、retry lifecycle、immutable supply chain、Air-Gapped deployment、Prometheus/Grafana observability、SLO 與 alerting。
 
+## Engineering Decisions & Production Evidence
+
+### Problem
+
+企業 ETL 的風險不只在 transformation 是否能執行，而是 **scheduler、runtime、audit、retry、artifact promotion、offline delivery 與 observability** 之間是否有一致且可追蹤的 lifecycle。只看 Airflow task 綠燈，無法回答「第一次失敗有沒有被保留」、「TEST 與 PROD 是否真的是同一個 artifact」、「監控告警是否真的會 firing」。
+
+### Key Engineering Decisions & Trade-offs
+
+| Decision | Why / Benefit | Trade-off |
+|---|---|---|
+| **Airflow 負責 orchestration，Apache Hop 負責 data processing** | 將 scheduling/retry/context 與 ETL transformation responsibility 分離，讓 workflow 與資料處理各自演進 | 多一層 runtime 與 connection/configuration 管理，故障關聯需要跨 Airflow / Hop / Audit |
+| **PostgreSQL 作為 execution truth** | Run / Attempt / Event 可持久化，retry 不覆蓋歷史，可支援 audit、metrics、SLO | PostgreSQL 成為平台依賴，需要 HA、backup 與 schema migration 管理 |
+| **Build once, promote same immutable artifact** | 避免 TEST 與 PROD 重新 build 造成 drift，可用 digest/checksum 驗證交付一致性 | 需要額外 promotion、bundle、verification 與 registry/offline artifact lifecycle |
+| **Observability 從 read-only audit views 匯出** | Monitoring 不需要直接寫入 ETL runtime；SQL Exporter → Prometheus → Alertmanager/Grafana 可獨立演進 | Metrics freshness 依賴 audit 資料與 exporter scrape path |
+
+### Production Failure & Recovery
+
+| Scenario | Engineering Behavior / Detection | Recovery Strategy |
+|---|---|---|
+| Hop execution 失敗後 retry | Failure 與 retry 被視為不同 attempt，不覆蓋前一次 execution history | 依 Airflow retry policy 重試；用 PostgreSQL audit 追蹤 attempt history |
+| Audit database 不可用 | Durable execution truth 不可被確認；不能只依 scheduler UI 推定完整成功 | 將 audit DB 視為平台 dependency，恢復後重新驗證 run/attempt 狀態並補做必要 retry |
+| Prometheus / Grafana 暫時不可用 | Data execution truth 仍保留於 PostgreSQL；監控面與 ETL execution path 分離 | 恢復 SQL Exporter / Prometheus / Alertmanager / Grafana 後重新 scrape，不重建 ETL history |
+| Offline bundle / image identity 不一致 | checksum / image identity verification 應阻止不一致 artifact promotion | 重新產生或驗證 bundle，只有通過 identity/checksum 驗證的 artifact 才進入下一環境 |
+
+### Production Evidence
+
+| Claim | Repository Evidence |
+|---|---|
+| Retry / audit lifecycle 可執行驗證 | `scripts/etl_lifecycle_smoke.sh`, `docs/AUDIT_LIFECYCLE.md`, `postgres/init/002_v0_3_audit_lifecycle.sql` |
+| Observability / SLO / firing alert 不是紙上設計 | `scripts/observability_smoke.sh`, `postgres/init/003_v0_5_observability.sql`, `monitoring/sql-exporter/etl_audit.collector.yml` |
+| Immutable promotion / offline bundle 有 runtime verification | `scripts/supply_chain_smoke.sh`, `scripts/promote_image.sh`, `scripts/verify_offline_bundle.sh` |
+| Repository policy 與 regression baseline | `scripts/validate_repository.py`, `tests/test_repository.py` |
+| CI / Security gate | `.github/workflows/ci.yml`, `.github/workflows/security.yml` |
+
+### Interview Questions This Project Can Answer
+
+- 為什麼不是「全部用 Airflow PythonOperator」或「全部用 Hop」？
+- Retry 如何避免把第一次 failure 覆蓋掉？
+- 如何證明 TEST 與 PROD 使用的是同一個 artifact？
+- Monitoring stack 掛掉時，為什麼 execution history 不會一起消失？
+- CI 綠燈到底驗證了 syntax，還是實際 runtime behavior？
+
+
 ### v0.5 — Executable Observability
 
 v0.5 新增完整監控鏈：
