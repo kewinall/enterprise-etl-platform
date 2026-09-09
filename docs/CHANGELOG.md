@@ -2,6 +2,26 @@
 
 ## 繁體中文
 
+### [0.7.0] - 2026-09-10
+
+#### Added
+
+- deterministic synthetic Pentaho KTR / KJB parser
+- normalized ETL metadata v1.1
+- structural lineage、inferred-deterministic lineage 與 AI interpretation 分層
+- Pentaho → Apache Hop migration planner / validator
+- workflow dependency、parameter、variable preservation
+- migration smoke / regression tests
+- OpenAI-compatible Multi-LLM AI Gateway adapter
+- MCP / RAG / DataOps integration boundary documentation
+- explicit column-level lineage capability boundary
+
+#### Changed
+
+- ETL Intelligence 從單一 semantic feature 深化為 Legacy ETL Modernization workflow
+- migration correctness 明確由 deterministic evidence / validation / reconciliation / review 控制
+- portfolio reference architecture 優先透過 Data Platform MCP Server 與 Multi-LLM AI Gateway 整合
+
 ### [0.6.0] - 2026-09-10
 
 #### Added
@@ -74,6 +94,26 @@
 - Enterprise Data Engineering Platform foundation
 
 ## English
+
+### [0.7.0] - 2026-09-10
+
+#### Added
+
+- deterministic synthetic Pentaho KTR/KJB parser
+- normalized ETL metadata v1.1
+- explicit structural, deterministic-inferred, and AI interpretation lineage classes
+- Pentaho-to-Apache-Hop migration planner and validator
+- workflow dependency, parameter, and variable preservation
+- executable migration smoke and regression tests
+- OpenAI-compatible Multi-LLM AI Gateway adapter
+- MCP/RAG/DataOps integration boundary documentation
+- explicit column-level lineage capability boundary
+
+#### Changed
+
+- ETL Intelligence is now part of a complete legacy-modernization workflow
+- deterministic evidence, validation, reconciliation, and review remain the migration correctness authority
+- portfolio reference integrations prefer the Data Platform MCP Server and Multi-LLM AI Gateway
 
 ### [0.6.0] - 2026-09-10
 
