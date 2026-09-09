@@ -3,7 +3,7 @@
 **目前版本 / Current release: v0.5.0**
 
 > **📘 Interactive Project Guide / 專案互動式說明文件**  
-> [Open the single-file HTML guide](docs/enterprise-etl-platform-guide.html) — 面試官 5 分鐘速讀、完整架構、Airflow → Hop ETL lifecycle、PostgreSQL Audit/Retry、Immutable Supply Chain、Air-Gapped Delivery、Prometheus/Grafana、SLO/Alerting、CI/Security 與使用教學集中於單一自包含 HTML。
+> [Open Live Project Guide](https://kewinall.github.io/enterprise-etl-platform/) · [Repository HTML](docs/enterprise-etl-platform-guide.html) — 面試官 5 分鐘速讀、完整架構、Airflow → Hop ETL lifecycle、PostgreSQL Audit/Retry、Immutable Supply Chain、Air-Gapped Delivery、Prometheus/Grafana、SLO/Alerting、CI/Security 與使用教學集中於單一自包含 HTML。
 
 [繁體中文](#繁體中文) | [English](#english)
 
