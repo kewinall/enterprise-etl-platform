@@ -1,0 +1,89 @@
+collector_name: etl_audit
+
+metrics:
+  - metric_name: etl_pipeline_runs_total
+    type: counter
+    help: "Total ETL execution attempts by pipeline, environment, and final/current status."
+    key_labels:
+      - pipeline_name
+      - environment_name
+      - status
+    values:
+      - run_count
+    query: |
+      SELECT pipeline_name, environment_name, status, run_count
+      FROM etl_observability.pipeline_status_totals
+
+  - metric_name: etl_pipeline_retry_total
+    type: counter
+    help: "Total retry attempts observed for an ETL pipeline."
+    key_labels:
+      - pipeline_name
+      - environment_name
+    values:
+      - retry_count
+    query_ref: pipeline_runtime
+
+  - metric_name: etl_records_written_total
+    type: counter
+    help: "Total records reported written by ETL execution audit."
+    key_labels:
+      - pipeline_name
+      - environment_name
+    values:
+      - records_written
+    query_ref: pipeline_runtime
+
+  - metric_name: etl_running_stale_total
+    type: gauge
+    help: "ETL attempts still RUNNING for more than 30 minutes."
+    key_labels:
+      - pipeline_name
+      - environment_name
+    values:
+      - stale_running
+    query_ref: pipeline_runtime
+
+  - metric_name: etl_last_success_timestamp_seconds
+    type: gauge
+    help: "Unix timestamp of the latest successful ETL attempt."
+    key_labels:
+      - pipeline_name
+      - environment_name
+    values:
+      - last_success_timestamp_seconds
+    query_ref: pipeline_runtime
+
+  - metric_name: etl_pipeline_duration_seconds
+    type: gauge
+    help: "Average duration in seconds for completed ETL attempts."
+    key_labels:
+      - pipeline_name
+      - environment_name
+    values:
+      - average_duration_seconds
+    query_ref: pipeline_runtime
+
+  - metric_name: etl_pipeline_duration_p95_seconds
+    type: gauge
+    help: "P95 duration in seconds for completed ETL attempts."
+    key_labels:
+      - pipeline_name
+      - environment_name
+    values:
+      - p95_duration_seconds
+    query_ref: pipeline_runtime
+
+queries:
+  - query_name: pipeline_runtime
+    query: |
+      SELECT
+          pipeline_name,
+          environment_name,
+          retry_count,
+          records_written,
+          stale_running,
+          last_success_timestamp_seconds,
+          average_duration_seconds,
+          p95_duration_seconds
+      FROM etl_observability.pipeline_runtime_metrics
