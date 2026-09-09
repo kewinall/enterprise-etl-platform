@@ -2,86 +2,109 @@
 
 ## 繁體中文
 
-v0.3 已有三層可觀測來源：
+### Monitoring stack
 
-1. Airflow DAG / task state
-2. Hop Server execution log
-3. PostgreSQL structured execution audit
+v0.5 正式實作：
 
-### PostgreSQL operational views
+```text
+PostgreSQL
+  ↓
+etl_observability views
+  ↓
+SQL Exporter :9399
+  ↓
+Prometheus :9090
+  ├─ recording rules
+  └─ alert rules
+      ↓
+Alertmanager :9093
 
-失敗 execution：
-
-```sql
-SELECT
-    pipeline_name,
-    environment_name,
-    run_id,
-    attempt_number,
-    error_message,
-    started_at,
-    finished_at
-FROM etl_audit.etl_execution_log
-WHERE status = 'FAILED'
-ORDER BY started_at DESC;
+Prometheus
+  ↓
+Grafana :3000
 ```
 
-Retry 次數：
+Pinned versions：
 
-```sql
-SELECT
-    correlation_id,
-    count(*) AS attempts,
-    max(attempt_number) AS max_attempt
-FROM etl_audit.etl_execution_log
-GROUP BY correlation_id
-HAVING count(*) > 1;
+| Component | Version |
+|---|---|
+| SQL Exporter | 0.24.8 |
+| Prometheus | 3.14.0 |
+| Alertmanager | 0.34.0 |
+| Grafana | 13.2.1 |
+
+### Metric contract
+
+| Metric | Type | Meaning |
+|---|---|---|
+| `etl_pipeline_run_total` | counter | completed attempts by final status |
+| `etl_pipeline_failure_total` | counter | failed attempts |
+| `etl_pipeline_retry_total` | counter | retry attempts |
+| `etl_records_written_total` | counter | audited written records |
+| `etl_running_stale_total` | gauge | RUNNING > 30m |
+| `etl_last_success_timestamp_seconds` | gauge | latest success epoch |
+| `etl_pipeline_duration_seconds` | gauge | average completed duration |
+| `etl_pipeline_duration_p95_seconds` | gauge | P95 completed duration |
+
+### Why counters exclude RUNNING
+
+Execution row 會從 `RUNNING` 更新成 `SUCCESS` / `FAILED`。若將 RUNNING count 當 counter，狀態轉換會造成值下降，違反 Prometheus counter semantics。
+
+因此：
+
+- final attempts → counter
+- stale/current state → gauge
+
+### Grafana dashboard
+
+Provisioned dashboard：
+
+**Enterprise ETL Operations**
+
+包含：
+
+- SLO Success Ratio
+- Error Budget Remaining
+- Stale RUNNING
+- Retry Attempts
+- Execution Attempts by Status
+- Average / P95 Duration
+- Records Written
+- Last Success Age
+
+Datasource provisioning：
+
+`monitoring/grafana/provisioning/datasources/prometheus.yml`
+
+### Local start
+
+```bash
+docker compose --profile monitoring up -d
 ```
 
-Incomplete execution：
+### Runtime verification
 
-```sql
-SELECT *
-FROM etl_audit.etl_execution_log
-WHERE status = 'RUNNING'
-  AND started_at < CURRENT_TIMESTAMP - INTERVAL '30 minutes';
+```bash
+make observability-smoke
 ```
 
-Lifecycle：
+Smoke test 驗證：
 
-```sql
-SELECT
-    l.run_id,
-    l.attempt_number,
-    e.event_type,
-    e.event_at,
-    e.message
-FROM etl_audit.etl_execution_log l
-JOIN etl_audit.etl_execution_event e
-  ON e.execution_id = l.execution_id
-ORDER BY e.event_at DESC;
-```
-
-### Target traceability
-
-`etl_data.synthetic_customer_daily` 可用 `run_id + attempt_number` join 回 audit table。
-
-### Target metrics
-
-- `etl_pipeline_run_total`
-- `etl_pipeline_failure_total`
-- `etl_pipeline_retry_total`
-- `etl_pipeline_duration_seconds`
-- `etl_records_written_total`
-- `etl_running_stale_total`
-- `etl_last_success_timestamp`
-
-v0.5 才會把這些正式暴露到 Prometheus/Grafana 與 alert/SLO。
+- PostgreSQL observability migration
+- SQL Exporter metrics
+- Prometheus config/rules
+- Prometheus query API
+- firing SLO/stale alerts
+- Alertmanager readiness
+- Grafana datasource
+- Grafana dashboard
 
 ## English
 
-v0.3 provides three observable layers: Airflow task state, Hop Server execution logs, and structured PostgreSQL audit data.
+v0.5 implements the monitoring stack rather than merely documenting target metrics.
 
-The audit tables now support direct queries for failed attempts, retry counts, stale RUNNING executions, lifecycle events, and target-data traceability.
+A read-only PostgreSQL observability surface feeds SQL Exporter, which Prometheus scrapes. Prometheus evaluates recording and alert rules, Alertmanager provides the routing baseline, and Grafana is provisioned with an operations dashboard.
 
-Prometheus/Grafana metric export, alert rules, and SLOs remain v0.5 scope.
+Final execution attempts are counters; current/stale state is exposed as gauges to preserve Prometheus metric semantics.
+
+The executable observability smoke test validates the complete runtime path.
