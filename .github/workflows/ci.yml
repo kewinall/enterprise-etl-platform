@@ -31,6 +31,9 @@ jobs:
       - name: Execute ETL Intelligence smoke test
         run: bash scripts/etl_intelligence_smoke.sh
 
+      - name: Execute P1 modernization / lineage integration smoke test
+        run: bash scripts/p1_integration_smoke.sh
+
       - name: Validate GitLab enterprise delivery reference
         run: python ci/gitlab/verify_reference.py
 
