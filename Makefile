@@ -1,4 +1,4 @@
-.PHONY: validate test compose-check security-check
+.PHONY: validate test compose-check security-check hop-smoke
 
 validate:
 	python scripts/validate_repository.py
@@ -11,3 +11,6 @@ compose-check:
 
 security-check:
 	python scripts/secret_scan.py
+
+hop-smoke:
+	bash scripts/hop_api_smoke.sh

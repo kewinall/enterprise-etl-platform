@@ -12,6 +12,8 @@ build/
 airflow/logs/
 airflow/airflow.db
 postgres/data/
+hop/config/
+hop/audit/
 sbom*.json
 .DS_Store
 .idea/

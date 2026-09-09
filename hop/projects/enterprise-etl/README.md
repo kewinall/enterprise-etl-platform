@@ -2,16 +2,30 @@
 
 ## 繁體中文
 
-此目錄為 v0.1 的 Apache Hop project workspace。正式 pipeline/workflow 將在後續版本加入；目前先固定專案邊界、volume mount 與 promotion 路徑。
+此目錄是 `enterprise-etl` 的 Apache Hop project home。
 
-- Project name: `enterprise-etl`
-- Sample domain: synthetic customer data
-- Credential policy: 不在 project file 中保存真實 Credential
+v0.2 已包含：
+
+- `project-config.json`
+- `pipelines/synthetic_customer_daily.hpl`
+- `RUN_ENV` lifecycle parameter
+- Hop Server / `hop-run` compatible project layout
+
+Pipeline 只產生 generic synthetic rows，加入 `record_id` sequence，再寫入 Hop execution log；不包含真實客戶資料，也不保存真實 Credential。
+
+完整 PostgreSQL execution audit 與 persisted sample ETL 將於 v0.3 實作。
 
 ## English
 
-This directory is the Apache Hop project workspace for v0.1. Executable pipelines/workflows will be added in later versions; this baseline establishes the project boundary, volume mount, and promotion path.
+This directory is the Apache Hop project home for `enterprise-etl`.
 
-- Project name: `enterprise-etl`
-- Sample domain: synthetic customer data
-- Credential policy: no real credentials are stored in project files
+v0.2 includes:
+
+- `project-config.json`
+- `pipelines/synthetic_customer_daily.hpl`
+- the `RUN_ENV` lifecycle parameter
+- a project layout compatible with Hop Server and `hop-run`
+
+The pipeline generates only generic synthetic rows, adds a `record_id` sequence, and writes output to the Hop execution log. It contains no real customer data or real credentials.
+
+Complete PostgreSQL execution auditing and persisted sample ETL outputs are deferred to v0.3.
