@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/etl-intelligence.schema.json",
+  "title": "ETL Semantic Intelligence Result",
+  "type": "object",
+  "required": ["schema_version", "analysis_mode", "parser_truth_digest", "pipeline_summary", "business_logic", "sql_explanations", "source_target_interpretation", "dependency_summary", "migration_assistance", "warnings", "provenance"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "analysis_mode": {"enum": ["ai", "fallback"]},
+    "parser_truth_digest": {"type": "string", "minLength": 64, "maxLength": 64},
+    "pipeline_summary": {"type": "object"},
+    "business_logic": {"type": "array"},
+    "sql_explanations": {"type": "array"},
+    "source_target_interpretation": {"type": "array"},
+    "dependency_summary": {"type": "array"},
+    "migration_assistance": {"type": "array"},
+    "warnings": {"type": "array"},
+    "provenance": {"type": "object"}
+  },
+  "additionalProperties": false
+}
