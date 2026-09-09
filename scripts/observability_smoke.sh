@@ -114,7 +114,7 @@ for _ in $(seq 1 30); do
 done
 
 metrics="$(curl --fail --silent http://127.0.0.1:19399/metrics)"
-for metric in   etl_pipeline_run_total   etl_pipeline_retry_total   etl_records_written_total   etl_running_stale_total   etl_last_success_timestamp_seconds   etl_pipeline_duration_seconds   etl_pipeline_duration_p95_seconds; do
+for metric in   etl_pipeline_run_total   etl_pipeline_failure_total   etl_pipeline_retry_total   etl_records_written_total   etl_running_stale_total   etl_last_success_timestamp_seconds   etl_pipeline_duration_seconds   etl_pipeline_duration_p95_seconds; do
   if ! grep -q "^# HELP ${metric} " <<<"${metrics}"; then
     echo "Missing exporter metric: ${metric}"
     exit 1
