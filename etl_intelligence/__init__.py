@@ -5,6 +5,8 @@ optional layer that may use an injected AI client but can never mutate parser tr
 """
 
 from .analyzer import SemanticAnalyzer, build_ai_context, metadata_digest
+from .gateway import OpenAICompatibleGatewayClient
+from .migration import MigrationPlanner, MigrationValidator
 from .parser import DeterministicETLParser
 
 __all__ = [
@@ -12,4 +14,7 @@ __all__ = [
     "SemanticAnalyzer",
     "build_ai_context",
     "metadata_digest",
+    "MigrationPlanner",
+    "MigrationValidator",
+    "OpenAICompatibleGatewayClient",
 ]
