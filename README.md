@@ -1,6 +1,6 @@
 # Enterprise ETL Platform
 
-**目前版本 / Current release: v0.6.0**
+**目前版本 / Current release: v0.7.0**
 
 > **📘 Interactive Project Guide / 專案互動式說明文件**  
 > [Open Live Project Guide](https://kewinall.github.io/enterprise-etl-platform/) · [Repository HTML](docs/enterprise-etl-platform-guide.html) — 面試官 5 分鐘速讀、完整架構、Airflow → Hop ETL lifecycle、PostgreSQL Audit/Retry、ETL Intelligence、GitLab Enterprise Delivery、CVE Remediation、Immutable Supply Chain、Air-Gapped Delivery、Prometheus/Grafana、SLO/Alerting 與使用教學集中於 Interactive HTML Guide。
@@ -9,7 +9,7 @@
 
 ## 繁體中文
 
-`enterprise-etl-platform` 是以 **Enterprise Data Engineering Platform** 為核心的作品集專案，涵蓋 ETL/ELT execution、Airflow orchestration、Apache Hop runtime、PostgreSQL audit、retry lifecycle、design-time ETL intelligence、GitLab enterprise delivery、CVE remediation、immutable supply chain、Air-Gapped deployment、Prometheus/Grafana observability、SLO 與 alerting。
+`enterprise-etl-platform` 是以 **Enterprise Data Engineering Platform** 為核心的作品集專案，涵蓋 Legacy ETL modernization、Pentaho → Apache Hop migration、normalized metadata / lineage、ETL/ELT execution、Airflow orchestration、Apache Hop runtime、PostgreSQL audit、design-time ETL intelligence、GitLab enterprise delivery、CVE remediation、immutable supply chain、Air-Gapped deployment、Prometheus/Grafana observability、SLO 與 alerting。
 
 ## Engineering Decisions & Production Evidence
 
@@ -53,6 +53,65 @@
 - Monitoring stack 掛掉時，為什麼 execution history 不會一起消失？
 - CI 綠燈到底驗證了 syntax，還是實際 runtime behavior？
 
+
+### v0.7 — Legacy ETL Modernization + Metadata / Lineage + Enterprise AI Integration
+
+v0.7 將 P0 的 ETL Intelligence 深化為可公開、可驗證的 modernization case：
+
+~~~text
+Legacy Pentaho KTR / KJB
+          |
+          v
+Deterministic Parser
+          |
+          v
+Normalized Metadata v1.1
+          |
+   +------+----------------+
+   |                       |
+   v                       v
+Migration Planner      Lineage Graph
+   |                 structural / inferred
+   v                       |
+Apache Hop Target           +--> MCP controlled access
+   |                        +--> RAG knowledge
+   v                        +--> DataOps evidence
+Deterministic Validation
+          |
+          v
+Representative reconciliation
+
+Semantic explanation:
+ETL Intelligence --> Multi-LLM AI Gateway --> Providers
+~~~
+
+新增 production-oriented evidence：
+
+- `samples/pentaho_to_hop/legacy_order_enrichment.ktr`
+- `samples/pentaho_to_hop/legacy_daily_orders.kjb`
+- `etl_intelligence/pentaho.py`
+- `etl_intelligence/metadata.py`
+- `etl_intelligence/migration.py`
+- `etl_intelligence/gateway.py`
+- `scripts/migration_case.py`
+- `scripts/p1_integration_smoke.sh`
+- `tests/test_migration_case.py`
+
+Lineage 明確分成 **structural**、**inferred-deterministic** 與 **AI interpretation**。目前不過度宣稱完整 column-level lineage；dynamic SQL、wildcard expansion、opaque plugin 等情境保留 capability boundary。
+
+跨 Repository 責任：
+
+- `enterprise-etl-platform`：ETL metadata producer / migration truth / lineage truth
+- `data-platform-mcp-server`：standardized governed read-only access
+- `enterprise-rag-platform`：knowledge retrieval / grounding
+- `agentic-dataops-copilot`：runtime incident reasoning / RCA
+- `multi-llm-ai-gateway`：model routing / fallback / provider / cost / auth governance
+
+詳細文件：
+
+- `docs/PENTAHO_TO_HOP_MIGRATION.md`
+- `docs/METADATA_LINEAGE.md`
+- `docs/PORTFOLIO_INTEGRATION.md`
 
 ### v0.6 — ETL Intelligence + Enterprise Delivery Security
 
@@ -180,6 +239,7 @@ python -m unittest discover -s tests -v
 docker compose config --quiet
 
 make etl-intelligence-smoke
+make p1-integration-smoke
 make lifecycle-smoke
 make observability-smoke
 make supply-chain-smoke
