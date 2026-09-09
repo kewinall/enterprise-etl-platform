@@ -92,7 +92,7 @@ fi
 hop_exec() {
   local pipeline_file="$1"
   shift
-  local pipeline_path="${PROJECT_HOME}/pipelines/${pipeline_file}"
+  local pipeline_path='${PROJECT_HOME}/pipelines/'"${pipeline_file}"
   local response_file
   response_file="$(mktemp)"
 
