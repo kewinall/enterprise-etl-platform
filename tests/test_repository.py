@@ -1,3 +1,4 @@
+import json
 import unittest
 from pathlib import Path
 from xml.etree import ElementTree
@@ -18,6 +19,15 @@ class RepositoryBaselineTest(unittest.TestCase):
         project_config = ROOT / "hop/projects/enterprise-etl/project-config.json"
         self.assertTrue(project_config.exists())
         self.assertIn("metadataBaseFolder", project_config.read_text())
+
+    def test_hop_local_run_configuration_exists(self):
+        run_config = (
+            ROOT
+            / "hop/projects/enterprise-etl/metadata/pipeline-run-configuration/local.json"
+        )
+        payload = json.loads(run_config.read_text())
+        self.assertEqual(payload["name"], "local")
+        self.assertIn("Local", payload["engineRunConfiguration"])
 
     def test_hop_pipeline_is_executable_structure(self):
         pipeline = ROOT / "hop/projects/enterprise-etl/pipelines/synthetic_customer_daily.hpl"
