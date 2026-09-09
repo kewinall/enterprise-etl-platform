@@ -7,8 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class RepositoryBaselineTest(unittest.TestCase):
-    def test_version_is_v0_5(self):
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "0.5.0")
+    def test_version_is_v0_6(self):
+        self.assertEqual((ROOT / "VERSION").read_text().strip(), "0.6.0")
 
     def test_v0_3_audit_schema_models_retry_lifecycle(self):
         sql = (ROOT / "postgres/init/002_v0_3_audit_lifecycle.sql").read_text()
