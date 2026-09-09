@@ -1,5 +1,10 @@
 # Enterprise ETL Platform
 
+**目前版本 / Current release: v0.5.0**
+
+> **📘 Interactive Project Guide / 專案互動式說明文件**  
+> [Open the single-file HTML guide](docs/enterprise-etl-platform-guide.html) — 面試官 5 分鐘速讀、完整架構、Airflow → Hop ETL lifecycle、PostgreSQL Audit/Retry、Immutable Supply Chain、Air-Gapped Delivery、Prometheus/Grafana、SLO/Alerting、CI/Security 與使用教學集中於單一自包含 HTML。
+
 [繁體中文](#繁體中文) | [English](#english)
 
 ## 繁體中文
@@ -91,6 +96,7 @@ docker compose ps
 
 詳細文件：
 
+- [Interactive Project Guide / 專案互動式說明文件](docs/enterprise-etl-platform-guide.html)
 - `docs/OBSERVABILITY.md`
 - `docs/SLO_ALERTING.md`
 - `docs/AUDIT_LIFECYCLE.md`
@@ -106,3 +112,17 @@ v0.5 adds SQL Exporter 0.24.8, Prometheus 3.14.0, Alertmanager 0.34.0, Grafana 1
 `make observability-smoke` creates synthetic success/failure/retry/stale executions and proves metrics, SLO rules, firing alerts, Alertmanager, and Grafana provisioning at runtime.
 
 All sample data, credentials, hostnames, schemas, and company information are synthetic or generic.
+
+## Documentation
+
+- [Interactive Project Guide / 專案互動式說明文件](docs/enterprise-etl-platform-guide.html)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Installation](docs/INSTALLATION.md)
+- [Audit Lifecycle](docs/AUDIT_LIFECYCLE.md)
+- [Supply Chain](docs/SUPPLY_CHAIN.md)
+- [Observability](docs/OBSERVABILITY.md)
+- [SLO & Alerting](docs/SLO_ALERTING.md)
+- [Security](docs/SECURITY.md)
+- [Governance](docs/GOVERNANCE.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Roadmap](docs/ROADMAP.md)
