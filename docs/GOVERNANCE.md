@@ -4,66 +4,95 @@
 
 ### Lifecycle
 
-`Design → Develop → Validate → Lifecycle Smoke → Security Scan → Package → TEST → Approve → Promote → PROD → Observe → Audit`
+`Design → Develop → Validate → Lifecycle Smoke → Security Scan → Build → TEST → Approve → Promote → PROD → Observe → Audit`
 
-v0.3 的 governance 不只看 deployment version，也要求每次 ETL execution 可回溯到：
+### v0.4 promotion rule
 
-- `run_id`
-- `attempt_number`
-- `correlation_id`
-- final status
-- records written
-- error summary
-- target rows
+最重要規則：
+
+**Build once. Promote the same artifact. Never rebuild for PROD.**
+
+允許：
+
+```text
+candidate sha256:X
+      ↓
+TEST sha256:X
+      ↓
+PROD sha256:X
+```
+
+不允許：
+
+```text
+candidate sha256:X
+      ↓
+TEST sha256:X
+      ↓
+rebuild
+      ↓
+PROD sha256:Y
+```
+
+`scripts/promote_image.sh` 會在 promotion 前後比較 image ID，不一致即失敗。
+
+### Source-to-artifact traceability
+
+Runtime image OCI labels保存：
+
+- platform version
+- source revision
+- source repository
+
+Offline `manifest.json` 再保存：
+
+- source commit
+- image reference
+- image ID
+- archive name
+- SBOM name
+- promotion policy
 
 ### Retry governance
 
-每個 retry 必須建立新的 attempt，不覆蓋失敗歷史：
+v0.3 execution governance 保持：
 
-```text
-run_id = X / attempt 1 / FAILED
-run_id = X / attempt 2 / SUCCESS
-```
-
-這可區分「第一次失敗後成功」與「第一次就成功」。
-
-### Status transition
-
-允許的主流程：
-
+- 每個 retry 是獨立 attempt。
 - `RUNNING → SUCCESS`
 - `RUNNING → FAILED`
-
-Retry 是新的 execution row，不是把 `FAILED` 改回 `RUNNING`。
-
-PostgreSQL trigger 會建立 append-only lifecycle event，並在 final state 寫入 `finished_at`。
-
-### Data traceability
-
-`etl_data.synthetic_customer_daily` 保存 `run_id + attempt_number + correlation_id`，讓資料落地可以回查 execution history。
+- Retry 不覆寫舊失敗歷史。
+- Target rows 保存 execution identity。
 
 ### Environment separation
 
-| Environment | Purpose | Governance |
+| Environment | Artifact policy | Configuration policy |
 |---|---|---|
-| DEV | 開發與快速驗證 | synthetic/local candidate |
-| TEST | Integration / acceptance | 必須通過 audit lifecycle test |
-| PROD | 正式執行 | promotion 已驗證 artifact；Credential runtime injection |
+| DEV | 可 build candidate | synthetic/local config |
+| TEST | 使用 candidate immutable identity | TEST runtime config |
+| PROD | 只能 promote 已核准 identity | PROD secret/runtime config |
+
+### Air-Gapped transfer
+
+離線交付必須包含：
+
+- image archive
+- CycloneDX image SBOM
+- manifest
+- SHA-256 checksums
+- detached signature
+
+Offline target 必須先 verify，再 `docker load`。
 
 ### Release gate
 
-Tag / Release 仍只在同一 main commit 的 CI 與 Security 都成功後建立。v0.3 CI 已包含 PostgreSQL + Hop 的 lifecycle smoke test。
+Tag / Release 只在**同一 main commit**的 CI 與 Security 成功後建立。
 
-### 後續
-
-Container artifact promotion、offline bundle、checksum/signing 為 v0.4。
+v0.4 main CI 另外會產生 validated `offline-bundle` artifact，Release workflow 下載該 artifact 並附加到 GitHub Release。
 
 ## English
 
-v0.3 adds execution governance to deployment governance. Every retry is a distinct execution attempt identified by run ID, attempt number, and correlation ID.
+v0.4 formalizes build-once promotion governance: candidate, TEST, and PROD must reference the exact same immutable image identity. Rebuilding for production is a policy violation.
 
-Valid final transitions are `RUNNING → SUCCESS` and `RUNNING → FAILED`. A retry creates a new row; failed history is never rewritten as a new RUNNING attempt.
+OCI labels and the offline manifest connect the image back to the source revision. The air-gapped transfer contains the image archive, SBOM, manifest, checksums, and signatures.
 
-Persisted target rows carry the same execution identity, enabling data-to-execution traceability.
-
-The release gate still requires successful CI and Security on the same main commit; v0.3 CI now includes the PostgreSQL/Hop lifecycle integration test.
+The release gate still requires successful CI and Security for the same main commit, and the validated CI offline bundle is attached to the GitHub Release.
