@@ -2,93 +2,83 @@
 
 ## 繁體中文
 
+### `make supply-chain-smoke` build 失敗
+
+確認：
+
+```bash
+docker version
+docker pull apache/hop:2.19.0
+docker pull anchore/syft:v1.51.1
+```
+
+並檢查 Docker daemon 可用空間。
+
+### Baked project 不存在
+
+驗證：
+
+```bash
+docker create --name etl-probe enterprise-etl-hop:local
+docker cp etl-probe:/opt/enterprise-etl/project/project-config.json /tmp/project-config.json
+docker rm etl-probe
+```
+
+若失敗，確認 `docker/hop-runtime.Dockerfile` build context 與 `.dockerignore`。
+
+### Promotion image ID 不一致
+
+`promote_image.sh` 不應 build，只能 retag。
+
+若 source/target image ID 不一致，視為 artifact drift，停止 promotion。
+
+### Syft 無法讀 Docker image
+
+確認 Docker socket：
+
+```bash
+ls -l /var/run/docker.sock
+docker image ls
+```
+
+CI 使用 containerized Syft 讀取 Docker daemon。
+
+### Signature verification failed
+
+確認使用的是**可信任且對應 signing private key 的 public key**：
+
+```bash
+openssl dgst -sha256 \
+  -verify trusted-public-key.pem \
+  -signature enterprise-etl-offline-v0.4.0.tar.gz.sig \
+  enterprise-etl-offline-v0.4.0.tar.gz
+```
+
+不要把 bundle 內附 public key 自動視為 production trust root。
+
+### SHA-256 failed
+
+任何 checksum 不一致都應停止部署。不要重新產生 checksum 來讓錯誤消失；應重新取得可信任的 release bundle。
+
+### Offline load image ID 不一致
+
+若 `docker load` 後 image ID 與 `manifest.json` 不一致：
+
+- 不部署。
+- 保存 bundle 與 verification log。
+- 回到 connected build zone 重新確認 artifact。
+- 檢查 transfer/storage 是否損壞。
+
 ### `make lifecycle-smoke` 失敗
 
 先確認：
 
 ```bash
-docker version
-docker compose version
 docker pull postgres:16-alpine
 docker pull apache/hop:2.19.0
 ```
 
-Smoke script 失敗時會保留 response/log 於 workflow output，結束時 cleanup temporary containers/network。
-
-### PostgreSQL 找不到 v0.3 table
-
-症狀：
-
-```text
-relation etl_audit.etl_execution_event does not exist
-relation etl_data.synthetic_customer_daily does not exist
-```
-
-原因通常是沿用 v0.2 volume，init scripts 沒有重新執行。
-
-套用 migration：
-
-```bash
-docker compose exec -T postgres \
-  psql -U etl_user -d etl_audit \
-  < postgres/init/002_v0_3_audit_lifecycle.sql
-```
-
-### Hop 找不到 `audit-postgres`
-
-確認：
-
-```bash
-docker compose exec hop \
-  ls -l /files/project/metadata/rdbms/
-```
-
-並確認 Hop container 有：
-
-```bash
-docker compose exec hop env | grep '^POSTGRES_'
-```
-
-### Duplicate execution attempt
-
-若看到 unique constraint / `uq_etl_execution_attempt` 錯誤，代表相同：
-
-`pipeline + environment + run_id + attempt_number`
-
-被重複建立。
-
-正常 Airflow retry 會增加 `try_number`；不要手動重用同一 attempt identity。
-
-### Execution 長期停在 RUNNING
-
-查詢：
-
-```sql
-SELECT *
-FROM etl_audit.etl_execution_log
-WHERE status = 'RUNNING'
-ORDER BY started_at;
-```
-
-可能原因：
-
-- Airflow task/process 被強制終止。
-- audit finalize endpoint 未執行。
-- PostgreSQL/Hop 在 finalize 時不可用。
-
-v0.3 保留 RUNNING 讓維運人員能識別 incomplete execution；自動 reconciliation 可於後續版本加入。
-
-### Target 已寫入但 attempt FAILED
-
-若 data pipeline 成功、finalize 過程失敗，Airflow task 仍可判定該 attempt 失敗。Target row 有 `attempt_number`，因此 retry 資料可分辨，不會覆蓋上一 attempt。
-
-### Airflow retry 沒有增加 attempt
-
-確認 DAG 使用：
-
-`context["ti"].try_number`
-
-以及 `execute_etl_with_audit` task 設定 `retries=2`。
+v0.3 audit/retry/persistence troubleshooting 原則仍適用。
 
 ### Security workflow 失敗
 
@@ -100,22 +90,8 @@ Trivy finding 應更新 dependency/base image 或建立有期限且具理由的 
 
 ## English
 
-### Lifecycle smoke failure
+If the supply-chain smoke fails, first verify Docker, the Apache Hop base image, and the pinned Syft image are available.
 
-Verify Docker, PostgreSQL 16 Alpine, and Apache Hop 2.19.0 are available. The CI smoke script prints Hop responses and logs when pipeline execution fails.
+A promotion identity mismatch is artifact drift and must stop deployment. Signature or checksum failures must also stop deployment; do not regenerate verification data to hide the mismatch.
 
-### Missing v0.3 tables
-
-An existing v0.2 PostgreSQL volume does not rerun initialization scripts. Apply `002_v0_3_audit_lifecycle.sql` manually.
-
-### Duplicate attempt
-
-The unique execution identity is pipeline + environment + run_id + attempt_number. Airflow retries must use a new `try_number`.
-
-### Stuck RUNNING execution
-
-A RUNNING row may indicate abrupt task termination or a failed audit-finalization call. v0.3 intentionally preserves incomplete attempts for investigation.
-
-### Data persisted but attempt failed
-
-Target rows carry `attempt_number`, so side effects from a failed attempt remain distinguishable from data produced by a retry.
+For production offline verification, trust a public key distributed independently from the bundle. If a loaded image ID differs from the manifest, quarantine the bundle and investigate the transfer/build chain.
