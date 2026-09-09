@@ -58,6 +58,26 @@ def build_ai_context(metadata: dict[str, Any]) -> dict[str, Any]:
         "targets": copy.deepcopy(metadata.get("targets", [])),
         "tables": copy.deepcopy(metadata.get("tables", [])),
         "fields": copy.deepcopy(metadata.get("fields", [])),
+        "columns": copy.deepcopy(metadata.get("columns", [])),
+        "dependencies": copy.deepcopy(metadata.get("dependencies", [])),
+        "parameters": [
+            {
+                "name": item.get("name"),
+                "description": item.get("description"),
+                "evidence_refs": item.get("evidence_refs", []),
+            }
+            for item in metadata.get("parameters", [])
+        ],
+        "variables": [
+            {
+                "name": item.get("name"),
+                "scope": item.get("scope"),
+                "evidence_refs": item.get("evidence_refs", []),
+            }
+            for item in metadata.get("variables", [])
+        ],
+        "lineage": copy.deepcopy(metadata.get("lineage", {})),
+        "capability_boundaries": copy.deepcopy(metadata.get("capability_boundaries", [])),
         "connections": [
             {
                 "name": item.get("name"),
@@ -132,6 +152,16 @@ def validate_ai_result(result: dict[str, Any], metadata: dict[str, Any]) -> dict
         for item in metadata.get("steps", [])
         if item.get("name")
     }
+    allowed_nodes.update(
+        str(value)
+        for dependency in metadata.get("dependencies", [])
+        for value in (dependency.get("from"), dependency.get("to"))
+        if value
+    )
+    pipeline = metadata.get("pipeline", {})
+    allowed_nodes.update(
+        str(value) for value in (pipeline.get("id"), pipeline.get("name")) if value
+    )
     for item in result.get("dependency_summary", []):
         if str(item.get("from") or "") not in allowed_nodes:
             raise ValueError(f"AI result references unknown dependency source: {item.get('from')}")
