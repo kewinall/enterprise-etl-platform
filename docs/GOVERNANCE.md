@@ -2,97 +2,71 @@
 
 ## 繁體中文
 
-### Lifecycle
+### Platform lifecycle
 
-`Design → Develop → Validate → Lifecycle Smoke → Security Scan → Build → TEST → Approve → Promote → PROD → Observe → Audit`
+`Design → Develop → Validate → Lifecycle Smoke → Observability Smoke → Security Scan → Build → TEST → Approve → Promote → PROD → Observe → Audit`
 
-### v0.4 promotion rule
+### Execution governance
 
-最重要規則：
+每次 execution 仍以：
+
+- `run_id`
+- `attempt_number`
+- `correlation_id`
+
+維持 retry 與 target-data traceability。
+
+Retry 是新 attempt，不覆蓋失敗歷史。
+
+### Artifact governance
+
+v0.4 規則維持：
 
 **Build once. Promote the same artifact. Never rebuild for PROD.**
 
-允許：
+### Observability governance
 
-```text
-candidate sha256:X
-      ↓
-TEST sha256:X
-      ↓
-PROD sha256:X
-```
+v0.5 增加：
 
-不允許：
+- monitoring queries 只能經 read-only observability surface
+- Grafana 不直接連 raw audit table
+- SLO / alert rule 必須納入 version control
+- CI 必須證明 Prometheus rule 可載入
+- CI 必須證明關鍵 alert 可實際 firing
+- notification credential 不可 commit
+- production receiver / escalation 應由部署環境管理
 
-```text
-candidate sha256:X
-      ↓
-TEST sha256:X
-      ↓
-rebuild
-      ↓
-PROD sha256:Y
-```
+### SLO baseline
 
-`scripts/promote_image.sh` 會在 promotion 前後比較 image ID，不一致即失敗。
+`ETL completed-attempt success ratio >= 99%`
 
-### Source-to-artifact traceability
+此為 portfolio baseline，不代表所有 production pipeline 使用同一 threshold。
 
-Runtime image OCI labels保存：
+正式環境應按 business criticality 調整：
 
-- platform version
-- source revision
-- source repository
-
-Offline `manifest.json` 再保存：
-
-- source commit
-- image reference
-- image ID
-- archive name
-- SBOM name
-- promotion policy
-
-### Retry governance
-
-v0.3 execution governance 保持：
-
-- 每個 retry 是獨立 attempt。
-- `RUNNING → SUCCESS`
-- `RUNNING → FAILED`
-- Retry 不覆寫舊失敗歷史。
-- Target rows 保存 execution identity。
-
-### Environment separation
-
-| Environment | Artifact policy | Configuration policy |
-|---|---|---|
-| DEV | 可 build candidate | synthetic/local config |
-| TEST | 使用 candidate immutable identity | TEST runtime config |
-| PROD | 只能 promote 已核准 identity | PROD secret/runtime config |
-
-### Air-Gapped transfer
-
-離線交付必須包含：
-
-- image archive
-- CycloneDX image SBOM
-- manifest
-- SHA-256 checksums
-- detached signature
-
-Offline target 必須先 verify，再 `docker load`。
+- SLO target
+- burn-rate window
+- maintenance window
+- escalation
+- retention
 
 ### Release gate
 
-Tag / Release 只在**同一 main commit**的 CI 與 Security 成功後建立。
+Tag / Release 仍只在相同 main commit 的：
 
-v0.4 main CI 另外會產生 validated `offline-bundle` artifact，Release workflow 下載該 artifact 並附加到 GitHub Release。
+- CI success
+- Security success
+
+後建立。
+
+v0.5 CI 已包含 lifecycle、observability、immutable supply-chain 三層 runtime smoke。
 
 ## English
 
-v0.4 formalizes build-once promotion governance: candidate, TEST, and PROD must reference the exact same immutable image identity. Rebuilding for production is a policy violation.
+v0.5 adds operational governance to the existing execution and artifact governance model.
 
-OCI labels and the offline manifest connect the image back to the source revision. The air-gapped transfer contains the image archive, SBOM, manifest, checksums, and signatures.
+Monitoring queries use a read-only observability surface; Grafana does not query raw audit data directly. SLO and alert rules are version controlled and CI must prove both rule loading and real alert evaluation.
 
-The release gate still requires successful CI and Security for the same main commit, and the validated CI offline bundle is attached to the GitHub Release.
+The 99% completed-attempt success SLO is a portfolio baseline. Production thresholds, burn-rate windows, escalation, maintenance windows, and retention should be governed by workload criticality.
+
+Release gating still requires CI and Security success on the same main commit.
