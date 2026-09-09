@@ -48,7 +48,7 @@ services:
       HOP_BASE_URL: http://hop:8181
       HOP_SERVER_USER: ${HOP_SERVER_USER:-hop-user}
       HOP_SERVER_PASS: ${HOP_SERVER_PASS:-synthetic-hop-password}
-      HOP_PIPELINE_PATH: "${PROJECT_HOME}/pipelines/synthetic_customer_daily.hpl"
+      HOP_PIPELINE_PATH: "$${PROJECT_HOME}/pipelines/synthetic_customer_daily.hpl"
     ports:
       - "8080:8080"
     volumes:
