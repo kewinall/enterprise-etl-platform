@@ -16,16 +16,17 @@ REQUIRED_DOCS = [
     "docs/OBSERVABILITY.md",
 ]
 FORBIDDEN_TOKENS = [
-    "10.0.0.",
-    "192.168.",
-    "corp.local",
-    "production-password",
-    "real-customer",
+    "10." + "0.0.",
+    "192." + "168.",
+    "corp" + "." + "local",
+    "production-" + "password",
+    "real-" + "customer",
 ]
 
 
 def main() -> int:
     errors: list[str] = []
+
     for rel in REQUIRED_DOCS:
         path = ROOT / rel
         if not path.exists():
@@ -42,9 +43,12 @@ def main() -> int:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
+
         for token in FORBIDDEN_TOKENS:
             if token in text:
-                errors.append(f"forbidden non-generic token '{token}' in {path.relative_to(ROOT)}")
+                errors.append(
+                    f"forbidden non-generic token '{token}' in {path.relative_to(ROOT)}"
+                )
 
     if errors:
         for error in errors:
