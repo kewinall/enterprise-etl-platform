@@ -15,6 +15,7 @@ REQUIRED_DOCS = [
     "docs/GOVERNANCE.md",
     "docs/OBSERVABILITY.md",
     "docs/ORCHESTRATION.md",
+    "docs/AUDIT_LIFECYCLE.md",
 ]
 FORBIDDEN_TOKENS = [
     "10." + "0.0.",
