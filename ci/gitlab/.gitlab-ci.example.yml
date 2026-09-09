@@ -1,0 +1,37 @@
+stages:
+  - validate
+  - test
+  - security
+  - package
+  - promote
+
+variables:
+  IMAGE_NAME: "$CI_REGISTRY_IMAGE/enterprise-etl"
+
+validate:
+  stage: validate
+  script:
+    - python scripts/validate_repository.py
+    - docker compose config --quiet
+
+test:
+  stage: test
+  script:
+    - python -m unittest discover -s tests -v
+
+security:
+  stage: security
+  script:
+    - python scripts/secret_scan.py
+    - trivy fs --exit-code 1 --severity HIGH,CRITICAL .
+
+package:
+  stage: package
+  script:
+    - echo "Build immutable image for the current commit SHA."
+
+promote:
+  stage: promote
+  when: manual
+  script:
+    - echo "Promote the already-built image digest; do not rebuild for PROD."
