@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Enterprise ETL Platform v0.5.0 單一 HTML 專案說明、使用教學與面試作品導覽">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#08121f">
+<title>Enterprise ETL Platform v0.5.0｜Interactive Project Guide</title>
+<style>
+:root{
+  --bg:#08121f;--bg2:#0d1b2c;--panel:#111f32;--panel2:#172a42;--panel3:#1b314d;
+  --text:#edf5ff;--muted:#9db0c7;--line:#2b415f;--accent:#54d6c7;--accent2:#68a8ff;
+  --ok:#65d58a;--warn:#f6c85f;--danger:#ff7d8b;--violet:#b69cff;--code:#07101c;
+  --shadow:0 22px 55px rgba(0,0,0,.28);--radius:18px;--max:1220px;--nav:rgba(8,18,31,.92)
+}
+html[data-theme="light"]{
+  --bg:#f4f8fc;--bg2:#edf3f9;--panel:#fff;--panel2:#f1f6fb;--panel3:#e9f1f8;
+  --text:#162338;--muted:#60738a;--line:#d4dfeb;--accent:#0c8d80;--accent2:#2f6fd4;
+  --ok:#16834d;--warn:#986900;--danger:#b72f43;--violet:#6b50c7;--code:#eef3f8;
+  --shadow:0 16px 42px rgba(45,67,95,.12);--nav:rgba(244,248,252,.93)
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;color:var(--text);font-family:Inter,"Noto Sans TC","Microsoft JhengHei","Segoe UI",system-ui,sans-serif;line-height:1.68;
+  background:
+    radial-gradient(circle at 8% 3%,rgba(84,214,199,.12),transparent 26%),
+    radial-gradient(circle at 92% 4%,rgba(104,168,255,.13),transparent 24%),
+    linear-gradient(145deg,var(--bg),var(--bg2));
+}
+a{color:var(--accent2);text-decoration:none}a:hover{text-decoration:underline}
+code,pre{font-family:"Cascadia Code","SFMono-Regular",Consolas,monospace}
+#progress{position:fixed;z-index:100;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--violet))}
+.topbar{position:sticky;top:0;z-index:90;background:var(--nav);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.topbar-inner{max-width:var(--max);margin:auto;padding:10px 20px;display:flex;align-items:center;gap:15px}
+.brand{font-weight:900;white-space:nowrap;letter-spacing:.01em}.brand small{font-weight:700;color:var(--muted)}
+.nav{flex:1;display:flex;gap:14px;overflow:auto;white-space:nowrap;font-size:13px}.nav a{color:var(--muted)}
+.actions{display:flex;gap:8px}
+button,.btn{
+  border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;padding:8px 11px;
+  font:inherit;font-size:13px;font-weight:750;cursor:pointer
+}
+button:hover,.btn:hover{border-color:var(--accent);text-decoration:none}
+.wrap{max-width:var(--max);margin:auto;padding:0 20px 70px}
+.hero{padding:72px 0 30px;display:grid;grid-template-columns:1.35fr .75fr;gap:30px;align-items:center}
+.kicker{color:var(--accent);text-transform:uppercase;letter-spacing:.11em;font-weight:900;font-size:12px}
+h1{font-size:clamp(42px,6vw,76px);line-height:1.02;letter-spacing:-.045em;margin:12px 0 18px}
+h1 .grad{background:linear-gradient(100deg,var(--accent),var(--accent2),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{font-size:clamp(27px,3.4vw,38px);line-height:1.15;margin:0}
+h3{margin:0 0 8px;font-size:18px}
+.lead{font-size:18px;color:var(--muted);max-width:820px}.lead strong{color:var(--text)}
+.badges,.pillrow,.cta{display:flex;gap:8px;flex-wrap:wrap}.badges{margin:20px 0}.cta{margin-top:23px}
+.badge,.pill{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:5px 9px;font-size:12px;font-weight:800;color:var(--muted);background:var(--panel)}
+.badge.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 42%,var(--line))}
+.hero-card,.card,.diagram,.callout,details{background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 90%,var(--panel2)));border:1px solid var(--line);box-shadow:var(--shadow)}
+.hero-card,.card,.diagram{border-radius:var(--radius)}.hero-card,.card{padding:21px}
+.metric{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line)}
+.metric:last-child{border-bottom:none}.metric span{color:var(--muted);font-size:13px}.metric strong{text-align:right}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:15px 0 52px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:16px}.stat strong{display:block;font-size:26px;letter-spacing:-.03em}.stat span{color:var(--muted);font-size:12px}
+section{margin:62px 0;scroll-margin-top:78px}
+.head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:18px}.head p{max-width:620px;margin:0;color:var(--muted)}
+.eyebrow{font-size:12px;color:var(--accent);font-weight:900;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.grid{display:grid;gap:15px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.icon{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:linear-gradient(135deg,rgba(84,214,199,.14),rgba(104,168,255,.18));border:1px solid var(--line);font-weight:900;color:var(--accent);margin-bottom:12px}
+.muted{color:var(--muted)}.ok{color:var(--ok)}.warn{color:var(--warn)}.danger{color:var(--danger)}
+.callout{padding:16px 18px;border-radius:14px;border-left:4px solid var(--accent)}
+.callout.okbox{border-left-color:var(--ok)}.callout.warnbox{border-left-color:var(--warn)}
+.diagram{padding:18px;overflow:auto}.diagram svg{display:block;width:100%;min-width:870px;height:auto}
+svg text{font-family:Inter,system-ui;fill:var(--text)}svg .sub{fill:var(--muted);font-size:12px}
+svg .node{fill:var(--panel2);stroke:var(--line);stroke-width:1.8}svg .nodeA{fill:color-mix(in srgb,var(--accent) 10%,var(--panel2));stroke:var(--accent);stroke-width:2}
+svg .nodeB{fill:color-mix(in srgb,var(--accent2) 11%,var(--panel2));stroke:var(--accent2);stroke-width:2}svg .nodeG{fill:color-mix(in srgb,var(--ok) 10%,var(--panel2));stroke:var(--ok);stroke-width:2}
+svg .arrow{stroke:var(--muted);stroke-width:2;fill:none;marker-end:url(#arr)}
+.tw{overflow:auto}table{width:100%;border-collapse:separate;border-spacing:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+th,td{padding:11px 13px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:var(--panel2);font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+tr:last-child td{border-bottom:0}.status{font-weight:850}.status.good{color:var(--ok)}
+pre{position:relative;background:var(--code);border:1px solid var(--line);border-radius:13px;padding:16px;overflow:auto;line-height:1.55;color:var(--text)}
+pre code{background:none;padding:0}.copy{position:absolute;top:8px;right:8px;padding:5px 8px;font-size:11px}
+code{background:var(--code);padding:.12em .36em;border-radius:5px}
+.steps{display:grid;gap:10px;counter-reset:s}.step{counter-increment:s;position:relative;padding:17px 17px 17px 55px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.step:before{content:counter(s);position:absolute;left:15px;top:15px;width:27px;height:27px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06101b;font-weight:900}
+.timeline{border-left:2px solid var(--line);padding-left:27px;margin-left:9px}.tl{position:relative;margin-bottom:22px}.tl:before{content:"";position:absolute;left:-34px;top:7px;width:11px;height:11px;border-radius:50%;background:var(--accent)}
+.timeline .current:before{background:var(--ok);box-shadow:0 0 0 5px color-mix(in srgb,var(--ok) 18%,transparent)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tab.active{border-color:var(--accent);color:var(--accent)}.tabpanel{display:none}.tabpanel.active{display:block}
+.filter{width:100%;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:11px;padding:10px 12px;margin-bottom:11px}
+details{border-radius:13px;padding:0 15px;box-shadow:none}details+details{margin-top:9px}summary{cursor:pointer;padding:13px 0;font-weight:850}
+.flowbar{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:stretch}.flowstep{position:relative;padding:14px 12px;background:var(--panel);border:1px solid var(--line);border-radius:13px;text-align:center}
+.flowstep:not(:last-child):after{content:"→";position:absolute;right:-15px;top:50%;transform:translateY(-50%);z-index:2;color:var(--accent);font-weight:900}
+.flowstep small{display:block;color:var(--muted)}
+.fade{opacity:0;transform:translateY(10px);transition:opacity .55s ease,transform .55s ease}.fade.show{opacity:1;transform:none}
+.footer{border-top:1px solid var(--line);padding:28px 0 10px;color:var(--muted);text-align:center}
+@media(max-width:950px){.hero,.g2,.g3,.g4{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.nav{display:none}.head{align-items:start;flex-direction:column}.flowbar{grid-template-columns:1fr}.flowstep:not(:last-child):after{content:"↓";right:auto;left:50%;top:auto;bottom:-18px}}
+@media(max-width:560px){.wrap,.topbar-inner{padding-left:13px;padding-right:13px}.stats{grid-template-columns:1fr}.actions .btn{display:none}.lead{font-size:16px}}
+@media print{#progress,.topbar,.copy,.tabs,.cta{display:none!important}body{background:#fff;color:#111}.card,.diagram,table,details,.callout{box-shadow:none;break-inside:avoid}section{margin:28px 0}a{color:#111}.fade{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">● Enterprise ETL Platform <small>v0.5.0</small></div>
+    <nav class="nav">
+      <a href="#interviewer">面試官速讀</a><a href="#architecture">架構</a><a href="#lifecycle">ETL Flow</a>
+      <a href="#audit">Audit/Retry</a><a href="#supply">Supply Chain</a><a href="#observe">Observability</a>
+      <a href="#quickstart">使用方式</a><a href="#cicd">CI/Security</a><a href="#versions">版本演進</a>
+    </nav>
+    <div class="actions">
+      <button id="themeBtn" type="button">◐ Theme</button>
+      <button onclick="window.print()" type="button">Print / PDF</button>
+      <a class="btn" href="https://github.com/kewinall/enterprise-etl-platform">GitHub ↗</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+<section class="hero fade">
+  <div>
+    <div class="kicker">Enterprise Data Engineering Platform · Portfolio Guide</div>
+    <h1>把 ETL 從「Job」提升成<br><span class="grad">可治理的平台</span></h1>
+    <p class="lead"><strong>繁體中文：</strong>從 Airflow 排程、Apache Hop 執行、PostgreSQL Audit/Retry/Persistence，一路延伸到 Immutable Image、Air-Gapped Delivery、Prometheus/Grafana、SLO 與 Alerting。</p>
+    <p class="lead"><strong>English:</strong> A production-oriented ETL platform reference architecture spanning orchestration, execution, auditability, retries, immutable delivery, offline deployment, metrics, SLOs, and alerting.</p>
+    <div class="badges">
+      <span class="badge ok">v0.5.0 Portfolio Complete</span><span class="badge">Apache Airflow</span><span class="badge">Apache Hop 2.19</span>
+      <span class="badge">PostgreSQL</span><span class="badge">Docker</span><span class="badge">Trivy</span><span class="badge">CycloneDX</span>
+      <span class="badge">Prometheus</span><span class="badge">Grafana</span>
+    </div>
+    <div class="cta">
+      <a class="btn" href="#interviewer">5 分鐘了解專案</a>
+      <a class="btn" href="#quickstart">立即使用</a>
+      <a class="btn" href="https://github.com/kewinall/enterprise-etl-platform/releases/tag/v0.5.0">v0.5.0 Release ↗</a>
+    </div>
+  </div>
+  <aside class="hero-card">
+    <div class="metric"><span>Portfolio Role</span><strong>Data Engineering Platform</strong></div>
+    <div class="metric"><span>Orchestration</span><strong>Airflow → Hop Server</strong></div>
+    <div class="metric"><span>Execution Audit</span><strong>PostgreSQL</strong></div>
+    <div class="metric"><span>Delivery</span><strong>Immutable + Air-Gapped</strong></div>
+    <div class="metric"><span>Observability</span><strong>Prometheus + Grafana</strong></div>
+    <div class="metric"><span>Quality Gate</span><strong class="ok">Runtime CI + Security</strong></div>
+  </aside>
+</section>
+
+<div class="stats fade">
+  <div class="stat"><strong>5</strong><span>Engineering maturity versions</span></div>
+  <div class="stat"><strong>3</strong><span>Executable runtime smoke layers</span></div>
+  <div class="stat"><strong>8</strong><span>ETL Prometheus metrics</span></div>
+  <div class="stat"><strong>99%</strong><span>Success SLO baseline</span></div>
+  <div class="stat"><strong>4</strong><span>Offline release assets</span></div>
+</div>
+
+<section id="interviewer" class="fade">
+  <div class="head"><div><div class="eyebrow">01 · Interviewer Fast Track</div><h2>面試官 5 分鐘速讀</h2></div><p>先看「問題、設計、證據」，再決定要深入哪一層。</p></div>
+  <div class="g3 grid">
+    <div class="card"><div class="icon">P</div><h3>Problem</h3><p>企業 ETL 不只是「排程成功」。真正問題包含 retry、稽核、版本一致性、離線交付、CVE、監控、SLO 與故障可追蹤性。</p></div>
+    <div class="card"><div class="icon">A</div><h3>Architecture</h3><p>Airflow 管 orchestration，Hop 管 data processing，PostgreSQL 管 execution truth；CI/Security、immutable supply chain、Prometheus/Grafana 包住整個 lifecycle。</p></div>
+    <div class="card"><div class="icon">✓</div><h3>Proof</h3><p>CI 不是只做 syntax：真的執行 failed attempt → retry success、Prometheus firing alert、image promotion → offline reload identity check。</p></div>
+  </div>
+  <div class="callout okbox" style="margin-top:14px">
+    <strong>一句話 Pitch：</strong>這不是「Airflow + Hop Demo」，而是一個展示企業 ETL 如何從開發、執行、稽核、安全升版到監控告警的 Data Engineering Platform。
+  </div>
+</section>
+
+<section id="positioning" class="fade">
+  <div class="head"><div><div class="eyebrow">02 · Portfolio Positioning</div><h2>作品集中的責任邊界</h2></div><p>避免每個 Repo 都變成「什麼都有」。</p></div>
+  <div class="tw"><table>
+    <thead><tr><th>Repository</th><th>Primary Role</th><th>核心問題</th></tr></thead>
+    <tbody>
+      <tr><td><strong>enterprise-etl-platform</strong></td><td>Data Engineering Platform</td><td>ETL 如何被排程、執行、稽核、升版、監控與離線交付？</td></tr>
+      <tr><td>enterprise-rag-platform</td><td>Knowledge AI Platform</td><td>企業知識如何被檢索、Grounding 與治理？</td></tr>
+      <tr><td>agentic-dataops-copilot</td><td>Reasoning / Operations</td><td>AI 如何分析 Incident 並提出受治理的操作建議？</td></tr>
+      <tr><td>data-platform-mcp-server</td><td>Tool / Integration Layer</td><td>AI 如何標準化、安全存取 Data Platform capabilities？</td></tr>
+      <tr><td>multi-llm-ai-gateway</td><td>Model Control Plane</td><td>多模型如何集中 Routing、Policy、Budget 與 Observability？</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="architecture" class="fade">
+  <div class="head"><div><div class="eyebrow">03 · Architecture</div><h2>整體架構 / End-to-End Architecture</h2></div><p>從 source commit 一路到 ETL execution、audit、monitoring 與 offline delivery。</p></div>
+  <div class="diagram">
+    <svg viewBox="0 0 1120 650" role="img" aria-label="Enterprise ETL Platform architecture">
+      <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+
+      <rect class="nodeA" x="40" y="55" width="180" height="70" rx="15"/><text x="130" y="84" text-anchor="middle" font-weight="800">Developer / Git</text><text class="sub" x="130" y="106" text-anchor="middle">Source + Hop Project</text>
+      <rect class="node" x="275" y="55" width="180" height="70" rx="15"/><text x="365" y="84" text-anchor="middle" font-weight="800">CI + Security</text><text class="sub" x="365" y="106" text-anchor="middle">Tests · Trivy · SBOM</text>
+      <rect class="nodeB" x="510" y="55" width="190" height="70" rx="15"/><text x="605" y="84" text-anchor="middle" font-weight="800">Immutable Image</text><text class="sub" x="605" y="106" text-anchor="middle">Build once</text>
+      <rect class="nodeG" x="755" y="55" width="145" height="70" rx="15"/><text x="827" y="84" text-anchor="middle" font-weight="800">TEST</text><text class="sub" x="827" y="106" text-anchor="middle">same image ID</text>
+      <rect class="nodeG" x="945" y="55" width="135" height="70" rx="15"/><text x="1012" y="84" text-anchor="middle" font-weight="800">PROD</text><text class="sub" x="1012" y="106" text-anchor="middle">promote only</text>
+      <path class="arrow" d="M220 90H270"/><path class="arrow" d="M455 90H505"/><path class="arrow" d="M700 90H750"/><path class="arrow" d="M900 90H940"/>
+
+      <rect class="nodeA" x="65" y="235" width="180" height="78" rx="15"/><text x="155" y="266" text-anchor="middle" font-weight="800">Apache Airflow</text><text class="sub" x="155" y="289" text-anchor="middle">Schedule · Retry · Context</text>
+      <rect class="nodeB" x="325" y="235" width="180" height="78" rx="15"/><text x="415" y="266" text-anchor="middle" font-weight="800">Hop Server</text><text class="sub" x="415" y="289" text-anchor="middle">Authenticated REST</text>
+      <rect class="nodeB" x="585" y="235" width="190" height="78" rx="15"/><text x="680" y="266" text-anchor="middle" font-weight="800">Apache Hop</text><text class="sub" x="680" y="289" text-anchor="middle">ETL Pipeline Runtime</text>
+      <rect class="nodeG" x="855" y="205" width="190" height="70" rx="15"/><text x="950" y="233" text-anchor="middle" font-weight="800">PostgreSQL Data</text><text class="sub" x="950" y="255" text-anchor="middle">Persisted Target</text>
+      <rect class="nodeG" x="855" y="300" width="190" height="70" rx="15"/><text x="950" y="328" text-anchor="middle" font-weight="800">PostgreSQL Audit</text><text class="sub" x="950" y="350" text-anchor="middle">Run / Attempt / Events</text>
+      <path class="arrow" d="M245 274H320"/><path class="arrow" d="M505 274H580"/><path class="arrow" d="M775 260L850 240"/><path class="arrow" d="M775 286L850 330"/>
+
+      <rect class="node" x="85" y="475" width="180" height="72" rx="15"/><text x="175" y="504" text-anchor="middle" font-weight="800">Read-only Views</text><text class="sub" x="175" y="527" text-anchor="middle">etl_observability</text>
+      <rect class="node" x="325" y="475" width="170" height="72" rx="15"/><text x="410" y="504" text-anchor="middle" font-weight="800">SQL Exporter</text><text class="sub" x="410" y="527" text-anchor="middle">SQL → Metrics</text>
+      <rect class="nodeA" x="555" y="475" width="170" height="72" rx="15"/><text x="640" y="504" text-anchor="middle" font-weight="800">Prometheus</text><text class="sub" x="640" y="527" text-anchor="middle">SLO · Rules · Alerts</text>
+      <rect class="nodeA" x="785" y="435" width="145" height="72" rx="15"/><text x="857" y="464" text-anchor="middle" font-weight="800">Grafana</text><text class="sub" x="857" y="487" text-anchor="middle">Dashboard</text>
+      <rect class="nodeA" x="785" y="535" width="145" height="72" rx="15"/><text x="857" y="564" text-anchor="middle" font-weight="800">Alertmanager</text><text class="sub" x="857" y="587" text-anchor="middle">Routing Baseline</text>
+      <rect class="nodeB" x="970" y="475" width="125" height="72" rx="15"/><text x="1032" y="504" text-anchor="middle" font-weight="800">Offline</text><text class="sub" x="1032" y="527" text-anchor="middle">Signed Bundle</text>
+      <path class="arrow" d="M950 370C950 420 175 420 175 470"/><path class="arrow" d="M265 511H320"/><path class="arrow" d="M495 511H550"/><path class="arrow" d="M725 495L780 471"/><path class="arrow" d="M725 527L780 567"/><path class="arrow" d="M1012 125V470"/>
+    </svg>
+  </div>
+</section>
+
+<section id="lifecycle" class="fade">
+  <div class="head"><div><div class="eyebrow">04 · Runtime Lifecycle</div><h2>一個 ETL Run 發生什麼？</h2></div><p>Airflow 與 Hop 各司其職，execution identity 一路帶到 PostgreSQL。</p></div>
+  <div class="flowbar">
+    <div class="flowstep"><strong>Airflow</strong><small>run_id / try_number</small></div>
+    <div class="flowstep"><strong>Audit Start</strong><small>RUNNING + STARTED</small></div>
+    <div class="flowstep"><strong>Hop ETL</strong><small>Transform + Persist</small></div>
+    <div class="flowstep"><strong>Audit Finalize</strong><small>SUCCESS / FAILED</small></div>
+    <div class="flowstep"><strong>Observe</strong><small>Metrics / SLO / Alert</small></div>
+  </div>
+  <div class="g2 grid" style="margin-top:18px">
+    <div class="card">
+      <h3>Airflow 負責</h3>
+      <div class="pillrow"><span class="pill">Scheduling</span><span class="pill">Dependency</span><span class="pill">Retry</span><span class="pill">Run identity</span></div>
+      <p class="muted">Airflow 不直接承擔 ETL transform 邏輯，避免 orchestration 與 data processing 耦合。</p>
+    </div>
+    <div class="card">
+      <h3>Apache Hop 負責</h3>
+      <div class="pillrow"><span class="pill">Pipeline</span><span class="pill">Transform</span><span class="pill">TableOutput</span><span class="pill">Audit Pipeline</span></div>
+      <p class="muted">Hop project 被 bake 進 immutable runtime image；環境差異透過 Hop Environment / runtime variable 注入。</p>
+    </div>
+  </div>
+</section>
+
+<section id="audit" class="fade">
+  <div class="head"><div><div class="eyebrow">05 · Audit & Retry</div><h2>失敗不被覆寫：Retry 也是可稽核事件</h2></div><p>v0.3 把 execution lifecycle 變成資料，而不是只留在 log。</p></div>
+  <div class="g2 grid">
+    <div class="card">
+      <h3>Retry Scenario</h3>
+      <pre><button class="copy" data-copy>Copy</button><code>Attempt 1
+STARTED
+  ↓
+FAILED
+  ↓
+Airflow retry
+
+Attempt 2
+STARTED
+  ↓
+ETL writes target rows
+  ↓
+SUCCESS</code></pre>
+    </div>
+    <div class="card">
+      <h3>PostgreSQL Audit Identity</h3>
+      <pre><button class="copy" data-copy>Copy</button><code>run_id
+attempt_number
+correlation_id
+pipeline_name
+environment_name
+status
+started_at
+finished_at
+records_read
+records_written
+error_message</code></pre>
+    </div>
+  </div>
+  <div class="callout" style="margin-top:14px"><strong>設計重點：</strong>Retry 不 update 掉舊失敗歷史。每個 attempt 都保留，target rows 也能關聯 execution identity，方便 incident review 與資料追蹤。</div>
+</section>
+
+<section id="supply" class="fade">
+  <div class="head"><div><div class="eyebrow">06 · Supply Chain</div><h2>Build Once，Promote Same Artifact</h2></div><p>作品集不只展示「會 build image」，而是展示版本一致性與離線交付治理。</p></div>
+  <div class="diagram">
+    <svg viewBox="0 0 1080 360" role="img" aria-label="Immutable image promotion">
+      <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+      <rect class="nodeA" x="30" y="95" width="175" height="72" rx="15"/><text x="117" y="124" text-anchor="middle" font-weight="800">Source Commit</text><text class="sub" x="117" y="147" text-anchor="middle">OCI revision label</text>
+      <rect class="nodeB" x="255" y="95" width="175" height="72" rx="15"/><text x="342" y="124" text-anchor="middle" font-weight="800">Candidate</text><text class="sub" x="342" y="147" text-anchor="middle">sha256:X</text>
+      <rect class="nodeG" x="480" y="95" width="150" height="72" rx="15"/><text x="555" y="124" text-anchor="middle" font-weight="800">TEST</text><text class="sub" x="555" y="147" text-anchor="middle">sha256:X</text>
+      <rect class="nodeG" x="680" y="95" width="150" height="72" rx="15"/><text x="755" y="124" text-anchor="middle" font-weight="800">PROD</text><text class="sub" x="755" y="147" text-anchor="middle">sha256:X</text>
+      <rect class="nodeB" x="880" y="70" width="170" height="122" rx="15"/><text x="965" y="105" text-anchor="middle" font-weight="800">Offline Bundle</text><text class="sub" x="965" y="130" text-anchor="middle">Image + SBOM</text><text class="sub" x="965" y="151" text-anchor="middle">SHA256 + Signature</text><text class="sub" x="965" y="172" text-anchor="middle">Manifest</text>
+      <path d="M205 131H250" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr2)"/><path d="M430 131H475" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr2)"/><path d="M630 131H675" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr2)"/><path d="M830 131H875" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr2)"/>
+      <text x="540" y="245" text-anchor="middle" font-size="18" font-weight="900" fill="var(--ok)">No rebuild between TEST and PROD</text>
+      <text class="sub" x="540" y="272" text-anchor="middle">CI removes local references → docker load offline archive → verifies same image ID</text>
+    </svg>
+  </div>
+  <div class="g4 grid" style="margin-top:15px">
+    <div class="card"><h3>SBOM</h3><p class="muted">Syft 產生 CycloneDX image SBOM。</p></div>
+    <div class="card"><h3>Integrity</h3><p class="muted">SHA-256 驗證 archive 與內部檔案。</p></div>
+    <div class="card"><h3>Signature</h3><p class="muted">OpenSSL detached signature；production key 應由 HSM/Vault 管理。</p></div>
+    <div class="card"><h3>Air-Gapped</h3><p class="muted">離線端 verify → docker load → image identity re-check。</p></div>
+  </div>
+</section>
+
+<section id="observe" class="fade">
+  <div class="head"><div><div class="eyebrow">07 · Observability</div><h2>Prometheus / Grafana / SLO / Alerting</h2></div><p>Monitoring 不直接讀 raw audit table，而是經 read-only observability surface。</p></div>
+  <div class="g3 grid">
+    <div class="card"><div class="icon">DB</div><h3>Read-only Metric Views</h3><p><code>etl_observability.pipeline_status_totals</code><br><code>etl_observability.pipeline_runtime_metrics</code></p></div>
+    <div class="card"><div class="icon">P</div><h3>Prometheus</h3><p>SQL Exporter 將 PostgreSQL aggregate view 轉成 metrics；Prometheus 負責 TSDB、recording rule、alert evaluation。</p></div>
+    <div class="card"><div class="icon">G</div><h3>Grafana</h3><p>Datasource 與 <strong>Enterprise ETL Operations</strong> dashboard 自動 provision。</p></div>
+  </div>
+
+  <h3 style="margin-top:22px">Metric Contract</h3>
+  <input id="metricFilter" class="filter" placeholder="搜尋 metric，例如 retry、duration、success...">
+  <div class="tw"><table id="metricTable">
+    <thead><tr><th>Metric</th><th>Type</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr><td><code>etl_pipeline_run_total</code></td><td>Counter</td><td>completed attempts by final status</td></tr>
+      <tr><td><code>etl_pipeline_failure_total</code></td><td>Counter</td><td>failed attempts</td></tr>
+      <tr><td><code>etl_pipeline_retry_total</code></td><td>Counter</td><td>retry attempts</td></tr>
+      <tr><td><code>etl_records_written_total</code></td><td>Counter</td><td>audited records written</td></tr>
+      <tr><td><code>etl_running_stale_total</code></td><td>Gauge</td><td>RUNNING over 30 minutes</td></tr>
+      <tr><td><code>etl_last_success_timestamp_seconds</code></td><td>Gauge</td><td>latest successful execution timestamp</td></tr>
+      <tr><td><code>etl_pipeline_duration_seconds</code></td><td>Gauge</td><td>average completed duration</td></tr>
+      <tr><td><code>etl_pipeline_duration_p95_seconds</code></td><td>Gauge</td><td>P95 completed duration</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="g2 grid" style="margin-top:16px">
+    <div class="card">
+      <h3>99% Success SLO</h3>
+      <pre><code>SUCCESS
+-----------------  ≥ 99%
+SUCCESS + FAILED</code></pre>
+      <div class="pillrow"><span class="pill">etl:slo_success_ratio</span><span class="pill">etl:slo_error_ratio</span><span class="pill">etl:slo_error_budget_remaining</span></div>
+    </div>
+    <div class="card">
+      <h3>Alerts</h3>
+      <p><span class="status warn">ETLPipelineSLOBreach</span> — success ratio &lt; 99%</p>
+      <p><span class="status danger">ETLStaleRunningExecution</span> — RUNNING &gt; 30m</p>
+      <p><span class="status warn">ETLNoRecentSuccess</span> — no success over 1h</p>
+    </div>
+  </div>
+</section>
+
+<section id="security" class="fade">
+  <div class="head"><div><div class="eyebrow">08 · Security</div><h2>Defense-in-Depth，不靠「注意不要放密碼」</h2></div><p>Repository、runtime、artifact、monitoring 各有明確安全邊界。</p></div>
+  <div class="g4 grid">
+    <div class="card"><h3>Repository</h3><p class="muted">Synthetic-only policy、Secret Scan、Trivy filesystem。</p></div>
+    <div class="card"><h3>Artifact</h3><p class="muted">CycloneDX SBOM、OCI provenance、SHA-256、detached signature。</p></div>
+    <div class="card"><h3>Runtime</h3><p class="muted">Credential runtime injection；不 bake production secret。</p></div>
+    <div class="card"><h3>Monitoring</h3><p class="muted">Read-only views、least privilege、Grafana 不直接查 raw audit。</p></div>
+  </div>
+  <div class="callout warnbox" style="margin-top:14px"><strong>Production 注意：</strong>Repo 中的 DB/Grafana/Hop/monitor password 都是 synthetic local defaults。正式環境應由 Vault、Secret Manager、Kubernetes Secret 或等價受控機制注入。</div>
+</section>
+
+<section id="quickstart" class="fade">
+  <div class="head"><div><div class="eyebrow">09 · Quick Start</div><h2>使用方式 / How to Run</h2></div><p>可只驗證 Repository，也可單獨啟動 ETL 或 Monitoring profile。</p></div>
+  <div class="tabs">
+    <button class="tab active" data-tab="validate">Validation</button>
+    <button class="tab" data-tab="etl">ETL Runtime</button>
+    <button class="tab" data-tab="monitor">Monitoring</button>
+    <button class="tab" data-tab="airgap">Air-Gapped Verify</button>
+  </div>
+  <div id="tab-validate" class="tabpanel active">
+    <pre><button class="copy" data-copy>Copy</button><code>git clone https://github.com/kewinall/enterprise-etl-platform.git
+cd enterprise-etl-platform
+cp .env.example .env
+
+python scripts/validate_repository.py
+python -m unittest discover -s tests -v
+docker compose config --quiet
+
+make lifecycle-smoke
+make observability-smoke
+make supply-chain-smoke</code></pre>
+  </div>
+  <div id="tab-etl" class="tabpanel">
+    <pre><button class="copy" data-copy>Copy</button><code>docker compose --profile orchestration up -d --build
+docker compose ps
+
+# Airflow
+# http://localhost:8080
+
+# Hop Server
+# http://localhost:8181
+
+# PostgreSQL
+# localhost:5432</code></pre>
+  </div>
+  <div id="tab-monitor" class="tabpanel">
+    <pre><button class="copy" data-copy>Copy</button><code>docker compose --profile monitoring up -d
+docker compose ps
+
+# Grafana
+# http://localhost:3000
+
+# Prometheus
+# http://localhost:9090
+
+# Alertmanager
+# http://localhost:9093
+
+# SQL Exporter
+# http://localhost:9399/metrics</code></pre>
+  </div>
+  <div id="tab-airgap" class="tabpanel">
+    <pre><button class="copy" data-copy>Copy</button><code>bash scripts/verify_offline_bundle.sh \
+  enterprise-etl-offline-v0.5.0.tar.gz \
+  /secure/path/trusted-public-key.pem</code></pre>
+    <p class="muted">正式環境應使用獨立可信任管道取得的 public key；不要把 bundle 內附 key 自動視為 production trust root。</p>
+  </div>
+</section>
+
+<section id="cicd" class="fade">
+  <div class="head"><div><div class="eyebrow">10 · CI / Security / Release</div><h2>綠燈代表「真的跑過」</h2></div><p>三層 Runtime Proof 加上 Security Gate，再進 Tag/Release。</p></div>
+  <div class="g3 grid">
+    <div class="card">
+      <div class="kicker">Layer 1</div><h3>ETL Lifecycle</h3>
+      <pre><code>FAILED attempt
+→ Airflow retry
+→ SUCCESS
+→ 3 persisted rows
+→ audit event sequence</code></pre>
+    </div>
+    <div class="card">
+      <div class="kicker">Layer 2</div><h3>Observability</h3>
+      <pre><code>PostgreSQL
+→ SQL Exporter
+→ Prometheus
+→ SLO rule
+→ FIRING alerts
+→ Grafana provision</code></pre>
+    </div>
+    <div class="card">
+      <div class="kicker">Layer 3</div><h3>Supply Chain</h3>
+      <pre><code>Build
+→ TEST
+→ PROD
+→ same image ID
+→ signed bundle
+→ docker load
+→ same image ID</code></pre>
+    </div>
+  </div>
+  <div class="flowbar" style="margin-top:16px">
+    <div class="flowstep"><strong>PR</strong><small>CI + Security</small></div>
+    <div class="flowstep"><strong>Merge</strong><small>main commit</small></div>
+    <div class="flowstep"><strong>Main Gates</strong><small>same runtime proof</small></div>
+    <div class="flowstep"><strong>Tag</strong><small>vX.Y.Z</small></div>
+    <div class="flowstep"><strong>Release</strong><small>validated assets</small></div>
+  </div>
+</section>
+
+<section id="versions" class="fade">
+  <div class="head"><div><div class="eyebrow">11 · Evolution</div><h2>版本演進 = 工程成熟度演進</h2></div><p>每版只增加一個清楚的 enterprise capability layer。</p></div>
+  <div class="timeline">
+    <div class="tl"><h3>v0.1 · Platform Foundation</h3><p class="muted">Docker Compose、Airflow/Hop workspace、PostgreSQL audit schema、DEV/TEST/PROD、CI/Security/Trivy/SBOM。</p></div>
+    <div class="tl"><h3>v0.2 · Executable Orchestration</h3><p class="muted">Airflow → authenticated Hop Server → executable .hpl，CI 實際執行 Hop pipeline。</p></div>
+    <div class="tl"><h3>v0.3 · Audit / Retry / Persistence</h3><p class="muted">run/attempt/correlation identity、append-only lifecycle、failed retry、persisted target rows。</p></div>
+    <div class="tl"><h3>v0.4 · Immutable Supply Chain</h3><p class="muted">Packaged Hop image、build once promotion、CycloneDX image SBOM、signed/checksummed Air-Gapped bundle。</p></div>
+    <div class="tl current"><h3>v0.5 · Observability / SLO / Alerting</h3><p class="muted">SQL Exporter、Prometheus、Alertmanager、Grafana、99% SLO、Error Budget、firing alert runtime proof。</p></div>
+  </div>
+  <div class="callout okbox"><strong>作品集決策：</strong>v0.5 是目前建議的 Portfolio Complete 停止點。v0.6 Recovery/Governance 保留為 future roadmap，而不是無限堆功能。</div>
+</section>
+
+<section id="repo" class="fade">
+  <div class="head"><div><div class="eyebrow">12 · Repository Map</div><h2>從哪裡看實作？</h2></div><p>面試官可依主題直接跳到對應檔案。</p></div>
+  <div class="tw"><table>
+    <thead><tr><th>主題</th><th>主要檔案 / 路徑</th><th>看什麼</th></tr></thead>
+    <tbody>
+      <tr><td>Airflow</td><td><code>airflow/dags/hop_synthetic_customer_pipeline.py</code></td><td>retry/context、Hop REST orchestration</td></tr>
+      <tr><td>Hop ETL</td><td><code>hop/projects/enterprise-etl/pipelines/</code></td><td>data pipeline、audit start/finalize</td></tr>
+      <tr><td>Audit</td><td><code>postgres/init/001_*.sql</code> / <code>002_*.sql</code></td><td>execution lifecycle schema</td></tr>
+      <tr><td>Observability</td><td><code>postgres/init/003_v0_5_observability.sql</code></td><td>read-only metric views</td></tr>
+      <tr><td>Prometheus</td><td><code>monitoring/prometheus/</code></td><td>scrape、recording、alerts</td></tr>
+      <tr><td>Grafana</td><td><code>monitoring/grafana/</code></td><td>datasource/dashboard provisioning</td></tr>
+      <tr><td>Supply Chain</td><td><code>scripts/build_runtime_image.sh</code> / <code>promote_image.sh</code></td><td>immutable image identity</td></tr>
+      <tr><td>Air-Gapped</td><td><code>scripts/create_offline_bundle.sh</code> / <code>verify_offline_bundle.sh</code></td><td>SBOM/checksum/signature/reload</td></tr>
+      <tr><td>Runtime Proof</td><td><code>scripts/*_smoke.sh</code></td><td>lifecycle、observability、supply-chain integration proof</td></tr>
+      <tr><td>CI/Security</td><td><code>.github/workflows/</code></td><td>quality/security/release gates</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="interview" class="fade">
+  <div class="head"><div><div class="eyebrow">13 · Interview Q&A</div><h2>面試時最值得講的工程決策</h2></div><p>可直接展開作為面試回答提示。</p></div>
+
+  <details open><summary>為什麼 Airflow 不直接做 ETL transform？</summary><p>Airflow 是 orchestration layer；Hop 是 ETL execution layer。這樣能降低 DAG 與 data-processing implementation 的耦合，讓 retry、排程與 pipeline 本身分工清楚。</p></details>
+  <details><summary>為什麼 retry 要保存 attempt_number？</summary><p>如果同一 run 只保留最後 SUCCESS，就會失去第一次 FAILED 的根因與時間軸。每個 attempt 獨立稽核，才能支援 incident review、SLA/SLO 分析與 audit traceability。</p></details>
+  <details><summary>為什麼 PROD 不能重新 build？</summary><p>TEST 驗證的是 artifact X；如果 PROD 又 build 出 Y，就失去「測過的東西就是上線的東西」這個保證。因此 promotion 應基於 immutable image identity / registry digest。</p></details>
+  <details><summary>為什麼 Grafana 不直接連 PostgreSQL raw audit？</summary><p>Observability 應有 least-privilege surface。SQL Exporter 只讀 aggregate views，Prometheus 儲存時序資料，Grafana 只讀 Prometheus，降低 raw audit schema 與 credential 暴露面。</p></details>
+  <details><summary>為什麼 RUNNING 不能當 Prometheus counter？</summary><p>因為 execution 會從 RUNNING 轉成 SUCCESS/FAILED，RUNNING count 可能下降，違反 counter 單調遞增語意。Current state 應用 gauge，final attempt count 才適合 counter。</p></details>
+  <details><summary>這個專案最能證明什麼？</summary><p>不是單一工具熟悉度，而是能把 Data Engineering 的執行、稽核、供應鏈、離線交付、安全與維運觀測串成一條可驗證的 enterprise lifecycle。</p></details>
+</section>
+
+<section id="demo" class="fade">
+  <div class="head"><div><div class="eyebrow">14 · Demo Script</div><h2>面試展示建議：3 分鐘路線</h2></div><p>不需要從 README 第一行一路念到底。</p></div>
+  <div class="steps">
+    <div class="step"><strong>先講 Positioning</strong><div class="muted">「這是 Data Engineering Platform，不是 AI 專案；它補齊我作品集中的 ETL/Platform engineering 能力。」</div></div>
+    <div class="step"><strong>打開 Architecture</strong><div class="muted">用 30 秒講 Airflow → Hop → PostgreSQL，再補 CI/Supply Chain/Monitoring 包住 lifecycle。</div></div>
+    <div class="step"><strong>展示 Runtime Proof</strong><div class="muted">指出 CI 真的跑 failed retry、firing alerts、offline reload identity，而不是只有 YAML。</div></div>
+    <div class="step"><strong>挑一個深挖</strong><div class="muted">Data Engineer 面試深挖 Audit/Retry；Platform/SRE 深挖 Supply Chain/Observability。</div></div>
+    <div class="step"><strong>以 Scope Decision 收尾</strong><div class="muted">說明 v0.5 主動停止，v0.6 放 Roadmap，代表有 scope control，而不是不停堆功能。</div></div>
+  </div>
+</section>
+
+<section class="fade">
+  <div class="callout okbox">
+    <strong>Project status：</strong>v0.5.0 是目前作品集完成版。若你是使用者，從 <a href="#quickstart">Quick Start</a> 開始；若你是面試官，建議先看 <a href="#interviewer">5 分鐘速讀</a>、<a href="#architecture">架構</a>、<a href="#cicd">Runtime Proof</a>。
+  </div>
+</section>
+
+<footer class="footer">
+  <p><strong>Enterprise ETL Platform v0.5.0</strong> · Data Engineering Platform Portfolio</p>
+  <p>All sample data, hostnames, credentials, schemas and company information are synthetic or generic.</p>
+  <p><a href="https://github.com/kewinall/enterprise-etl-platform">GitHub Repository</a> · <a href="https://github.com/kewinall/enterprise-etl-platform/releases/tag/v0.5.0">Release v0.5.0</a></p>
+</footer>
+</main>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  var stored=localStorage.getItem('etl-guide-theme');
+  if(stored){root.setAttribute('data-theme',stored);}
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var next=root.getAttribute('data-theme')==='light'?'dark':'light';
+    root.setAttribute('data-theme',next);
+    localStorage.setItem('etl-guide-theme',next);
+  });
+
+  var progress=document.getElementById('progress');
+  function updateProgress(){
+    var max=document.documentElement.scrollHeight-window.innerHeight;
+    var pct=max>0?(window.scrollY/max)*100:0;
+    progress.style.width=Math.min(100,pct)+'%';
+  }
+  window.addEventListener('scroll',updateProgress,{passive:true});updateProgress();
+
+  document.querySelectorAll('[data-copy]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var code=btn.parentElement.querySelector('code');
+      navigator.clipboard.writeText(code.innerText).then(function(){
+        var old=btn.textContent;btn.textContent='Copied';
+        setTimeout(function(){btn.textContent=old;},1200);
+      });
+    });
+  });
+
+  document.querySelectorAll('.tab').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
+      document.querySelectorAll('.tabpanel').forEach(function(x){x.classList.remove('active');});
+      btn.classList.add('active');
+      document.getElementById('tab-'+btn.getAttribute('data-tab')).classList.add('active');
+    });
+  });
+
+  var filter=document.getElementById('metricFilter');
+  filter.addEventListener('input',function(){
+    var q=filter.value.toLowerCase().trim();
+    document.querySelectorAll('#metricTable tbody tr').forEach(function(row){
+      row.style.display=row.innerText.toLowerCase().indexOf(q)>=0?'':'none';
+    });
+  });
+
+  var observer=new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('show');observer.unobserve(entry.target);}});
+  },{threshold:.08});
+  document.querySelectorAll('.fade').forEach(function(el){observer.observe(el);});
+})();
+</script>
+</body>
+</html>
