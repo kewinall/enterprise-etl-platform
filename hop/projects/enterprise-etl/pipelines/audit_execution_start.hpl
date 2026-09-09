@@ -21,27 +21,36 @@
   </info>
   <notepads/>
   <order>
-    <hop><from>Build audit start row</from><to>Insert execution attempt</to><enabled>Y</enabled></hop>
+    <hop><from>Generate one row</from><to>Resolve audit start fields</to><enabled>Y</enabled></hop>
+    <hop><from>Resolve audit start fields</from><to>Insert execution attempt</to><enabled>Y</enabled></hop>
   </order>
   <transform>
-    <name>Build audit start row</name>
+    <name>Generate one row</name>
     <type>RowGenerator</type>
-    <description>Build a single generic execution lifecycle record.</description>
+    <description>Create one input row for runtime variable resolution.</description>
+    <distribute>Y</distribute><copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <fields></fields>
+    <limit>1</limit><never_ending>N</never_ending><interval_in_ms>5000</interval_in_ms>
+    <row_time_field>now</row_time_field><last_time_field>FiveSecondsAgo</last_time_field>
+    <attributes/><GUI><xloc>80</xloc><yloc>112</yloc></GUI>
+  </transform>
+  <transform>
+    <name>Resolve audit start fields</name>
+    <type>GetVariable</type>
+    <description>Resolve Airflow/Hop runtime parameters after parameter activation.</description>
     <distribute>Y</distribute><copies>1</copies>
     <partitioning><method>none</method><schema_name/></partitioning>
     <fields>
-      <field><length>-1</length><name>pipeline_name</name><precision>-1</precision><set_empty_string>N</set_empty_string><type>String</type><nullif>synthetic_customer_daily</nullif></field>
-      <field><length>-1</length><name>environment_name</name><precision>-1</precision><set_empty_string>N</set_empty_string><type>String</type><nullif>${RUN_ENV}</nullif></field>
-      <field><length>-1</length><name>run_id</name><precision>-1</precision><set_empty_string>N</set_empty_string><type>String</type><nullif>${RUN_ID}</nullif></field>
-      <field><length>-1</length><name>correlation_id</name><precision>-1</precision><set_empty_string>N</set_empty_string><type>String</type><nullif>${CORRELATION_ID}</nullif></field>
-      <field><length>-1</length><name>attempt_number</name><precision>0</precision><set_empty_string>N</set_empty_string><type>Integer</type><nullif>${ATTEMPT_NUMBER}</nullif></field>
-      <field><length>-1</length><name>status</name><precision>-1</precision><set_empty_string>N</set_empty_string><type>String</type><nullif>RUNNING</nullif></field>
-      <field><length>-1</length><name>trigger_type</name><precision>-1</precision><set_empty_string>N</set_empty_string><type>String</type><nullif>${TRIGGER_TYPE}</nullif></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>pipeline_name</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>synthetic_customer_daily</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>environment_name</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>${RUN_ENV}</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>run_id</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>${RUN_ID}</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>correlation_id</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>${CORRELATION_ID}</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>attempt_number</name><precision>0</precision><trim_type>none</trim_type><type>Integer</type><variable>${ATTEMPT_NUMBER}</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>status</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>RUNNING</variable></field>
+      <field><currency/><decimal/><format/><group/><length>-1</length><name>trigger_type</name><precision>-1</precision><trim_type>none</trim_type><type>String</type><variable>${TRIGGER_TYPE}</variable></field>
     </fields>
-    <limit>1</limit><never_ending>N</never_ending><interval_in_ms>5000</interval_in_ms>
-    <row_time_field>now</row_time_field><last_time_field>FiveSecondsAgo</last_time_field>
-    <attributes/>
-    <GUI><xloc>128</xloc><yloc>112</yloc></GUI>
+    <attributes/><GUI><xloc>288</xloc><yloc>112</yloc></GUI>
   </transform>
   <transform>
     <name>Insert execution attempt</name>
@@ -49,8 +58,7 @@
     <description>Persist RUNNING attempt; PostgreSQL trigger captures STARTED event.</description>
     <distribute>Y</distribute><copies>1</copies>
     <partitioning><method>none</method><schema_name/></partitioning>
-    <commit>1</commit>
-    <connection>audit-postgres</connection>
+    <commit>1</commit><connection>audit-postgres</connection>
     <fields>
       <field><column_name>pipeline_name</column_name><stream_name>pipeline_name</stream_name></field>
       <field><column_name>environment_name</column_name><stream_name>environment_name</stream_name></field>
@@ -65,8 +73,7 @@
     <return_keys>N</return_keys><schema>etl_audit</schema><specify_fields>Y</specify_fields>
     <table>etl_execution_log</table><tablename_in_field>N</tablename_in_field><tablename_in_table>Y</tablename_in_table>
     <truncate>N</truncate><use_batch>N</use_batch><attributes/>
-    <GUI><xloc>432</xloc><yloc>112</yloc></GUI>
+    <GUI><xloc>520</xloc><yloc>112</yloc></GUI>
   </transform>
-  <transform_error_handling/>
-  <attributes/>
+  <transform_error_handling/><attributes/>
 </pipeline>
