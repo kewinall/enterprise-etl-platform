@@ -4,11 +4,9 @@
 
 ## 繁體中文
 
-`enterprise-etl-platform` 是以 **Data Engineering Platform** 為核心的作品集專案，聚焦 ETL/ELT 執行、排程、稽核、環境分離、安全供應鏈、Container Image promotion、Air-Gapped deployment 與 Observability。
+`enterprise-etl-platform` 是以 **Enterprise Data Engineering Platform** 為核心的作品集專案，主角是 ETL/ELT 執行、Orchestration、Auditability、環境分離、安全供應鏈、Container Image promotion、Air-Gapped deployment 與 Observability。
 
 ### 專案定位
-
-本專案刻意與其他平台型作品區隔：
 
 | Repository | 核心角色 |
 |---|---|
@@ -18,42 +16,62 @@
 | `multi-llm-ai-gateway` | Model Control Plane |
 | **`enterprise-etl-platform`** | **Data Engineering Platform** |
 
-### v0.1 Foundation
+### v0.2 — Executable Orchestration
 
-- Apache Airflow orchestration skeleton
-- Apache Hop project workspace
-- PostgreSQL Audit / ETL Execution Log schema
-- Docker Compose local platform baseline
+v0.2 將 v0.1 Foundation 升級為真正可執行的：
+
+`Airflow → authenticated Hop Server REST API → Apache Hop .hpl pipeline`
+
+核心內容：
+
+- Apache Hop **2.19.0**
+- `synthetic_customer_daily.hpl` executable pipeline
+- Hop project configuration
+- Hop Server long-lived Docker service
+- Airflow `hop_synthetic_customer_daily` DAG
+- Airflow 傳入 `RUN_ENV` lifecycle parameter
+- Docker Compose local integration
+- PR / main CI 實際啟動 Hop Server 並執行 pipeline smoke test
+- Trivy / Secret Scan / CycloneDX SBOM
 - DEV / TEST / PROD configuration separation
-- GitLab-style promotion and deployment governance
-- GitHub Actions CI / Security verification
-- Trivy filesystem security scan
-- SBOM generation
-- Repository-level secret scanning
-- Offline / Air-Gapped deployment design
-- Monitoring / Observability baseline
+- version-aware gated Tag / Release automation
 
-### 快速開始
+### 快速驗證
 
 ```bash
 cp .env.example .env
 python scripts/validate_repository.py
 python -m unittest discover -s tests -v
 docker compose config --quiet
-docker compose up -d postgres
+make hop-smoke
 ```
 
-> v0.1 不將真實 Credential 寫入 Repository。所有 Sample Data、Hostname、Schema 與設定皆為 synthetic / generic。
+### 啟動整合環境
 
-詳細文件：`docs/`
+```bash
+docker compose --profile orchestration up -d
+docker compose ps
+```
+
+- Airflow UI: `http://localhost:8080`
+- Hop Server: `http://localhost:8181`
+- DAG: `hop_synthetic_customer_daily`
+
+Airflow standalone 第一次啟動時會在 container log 顯示 local login credential：
+
+```bash
+docker compose logs airflow
+```
+
+> 所有 Sample Data、Hostname、Credential、Schema 與環境資訊均為 synthetic / generic。v0.2 不保存真實客戶或公司內部資訊。
+
+詳細說明請參考 `docs/`，尤其是 `docs/ORCHESTRATION.md`。
 
 ## English
 
-`enterprise-etl-platform` is a portfolio project centered on an **Enterprise Data Engineering Platform**. It focuses on ETL/ELT execution, orchestration, auditability, environment separation, software supply-chain security, container image promotion, air-gapped deployment, and observability.
+`enterprise-etl-platform` is a portfolio project centered on an **Enterprise Data Engineering Platform**. Its primary concerns are ETL/ELT execution, orchestration, auditability, environment separation, software supply-chain security, container image promotion, air-gapped deployment, and observability.
 
 ### Positioning
-
-This repository is intentionally separated from the other platform projects:
 
 | Repository | Primary role |
 |---|---|
@@ -63,31 +81,37 @@ This repository is intentionally separated from the other platform projects:
 | `multi-llm-ai-gateway` | Model Control Plane |
 | **`enterprise-etl-platform`** | **Data Engineering Platform** |
 
-### v0.1 Foundation
+### v0.2 — Executable Orchestration
 
-- Apache Airflow orchestration skeleton
-- Apache Hop project workspace
-- PostgreSQL Audit / ETL Execution Log schema
-- Docker Compose local platform baseline
-- DEV / TEST / PROD configuration separation
-- GitLab-style promotion and deployment governance
-- GitHub Actions CI / Security verification
-- Trivy filesystem security scan
-- SBOM generation
-- Repository-level secret scanning
-- Offline / Air-Gapped deployment design
-- Monitoring / Observability baseline
+v0.2 turns the v0.1 foundation into an executable:
 
-### Quick start
+`Airflow → authenticated Hop Server REST API → Apache Hop .hpl pipeline`
+
+It includes Apache Hop 2.19.0, an executable synthetic pipeline, Hop Server, an Airflow orchestration DAG, lifecycle parameter passing, Docker Compose integration, executable CI smoke tests, Trivy, secret scanning, CycloneDX SBOM generation, environment separation, and gated version-aware releases.
+
+### Quick validation
 
 ```bash
 cp .env.example .env
 python scripts/validate_repository.py
 python -m unittest discover -s tests -v
 docker compose config --quiet
-docker compose up -d postgres
+make hop-smoke
 ```
 
-> v0.1 stores no real credentials in the repository. All sample data, hostnames, schemas, and settings are synthetic or generic.
+### Start the integration
 
-See `docs/` for detailed documentation.
+```bash
+docker compose --profile orchestration up -d
+docker compose ps
+```
+
+- Airflow UI: `http://localhost:8080`
+- Hop Server: `http://localhost:8181`
+- DAG: `hop_synthetic_customer_daily`
+
+Use `docker compose logs airflow` to obtain the local standalone login generated by Airflow.
+
+> All sample data, hostnames, credentials, schemas, and environment values are synthetic or generic. v0.2 contains no real customer or internal company information.
+
+See `docs/`, especially `docs/ORCHESTRATION.md`.
