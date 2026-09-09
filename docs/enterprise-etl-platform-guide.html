@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Enterprise ETL Platform v0.6.0：ETL Intelligence、GitLab Delivery、Vulnerability Lifecycle、Runtime、Audit、Observability 與 Air-Gapped Delivery">
+<meta name="description" content="Enterprise ETL Platform v0.7.0：ETL Intelligence、GitLab Delivery、Vulnerability Lifecycle、Runtime、Audit、Observability 與 Air-Gapped Delivery">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#08121f">
-<title>Enterprise ETL Platform v0.6.0｜Interactive Project Guide</title>
+<title>Enterprise ETL Platform v0.7.0｜Interactive Project Guide</title>
 <style>
 :root{
   --bg:#08121f;--bg2:#0d1b2c;--panel:#111f32;--panel2:#172a42;--panel3:#1b314d;
@@ -100,10 +100,10 @@ details{border-radius:13px;padding:0 15px;box-shadow:none}details+details{margin
 <div id="progress"></div>
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="brand">● Enterprise ETL Platform <small>v0.6.0</small></div>
+    <div class="brand">● Enterprise ETL Platform <small>v0.7.0</small></div>
     <nav class="nav">
       <a href="#interviewer">面試官速讀</a><a href="#architecture">架構</a><a href="#lifecycle">ETL Flow</a>
-      <a href="#intelligence">ETL Intelligence</a><a href="#audit">Audit/Retry</a><a href="#delivery">Delivery Security</a><a href="#supply">Supply Chain</a><a href="#observe">Observability</a>
+      <a href="#intelligence">ETL Intelligence</a><a href="#modernization">Migration & Lineage</a><a href="#audit">Audit/Retry</a><a href="#delivery">Delivery Security</a><a href="#supply">Supply Chain</a><a href="#observe">Observability</a>
       <a href="#quickstart">使用方式</a><a href="#cicd">CI/Security</a><a href="#versions">版本演進</a>
     </nav>
     <div class="actions">
@@ -119,17 +119,17 @@ details{border-radius:13px;padding:0 15px;box-shadow:none}details+details{margin
   <div>
     <div class="kicker">Enterprise Data Engineering Platform · Portfolio Guide</div>
     <h1>把 ETL 從「Job」提升成<br><span class="grad">可治理的平台</span></h1>
-    <p class="lead"><strong>繁體中文：</strong>從 design-time ETL parsing / semantic intelligence，到 Airflow、Apache Hop、Audit/Retry，再延伸至 GitLab enterprise delivery、CVE remediation、Immutable/Air-Gapped Supply Chain 與 Observability。</p>
+    <p class="lead"><strong>繁體中文：</strong>從 Pentaho → Apache Hop legacy modernization、deterministic metadata / lineage 與 evidence-bound semantic intelligence，到 Airflow、Apache Hop、Audit/Retry，再延伸至 GitLab enterprise delivery、CVE remediation、Immutable/Air-Gapped Supply Chain 與 Observability。</p>
     <p class="lead"><strong>English:</strong> A production-oriented ETL platform reference architecture spanning orchestration, execution, auditability, retries, immutable delivery, offline deployment, metrics, SLOs, and alerting.</p>
     <div class="badges">
-      <span class="badge ok">v0.6.0 P0 Hardened</span><span class="badge">ETL Intelligence</span><span class="badge">GitLab CI/CD</span><span class="badge">Apache Airflow</span><span class="badge">Apache Hop 2.19</span>
+      <span class="badge ok">v0.7.0 P1 Integrated</span><span class="badge">ETL Intelligence</span><span class="badge">GitLab CI/CD</span><span class="badge">Apache Airflow</span><span class="badge">Apache Hop 2.19</span>
       <span class="badge">PostgreSQL</span><span class="badge">Docker</span><span class="badge">Trivy</span><span class="badge">CycloneDX</span>
       <span class="badge">Prometheus</span><span class="badge">Grafana</span>
     </div>
     <div class="cta">
       <a class="btn" href="#interviewer">5 分鐘了解專案</a>
       <a class="btn" href="#quickstart">立即使用</a>
-      <a class="btn" href="https://github.com/kewinall/enterprise-etl-platform/releases/tag/v0.6.0">v0.6.0 Release ↗</a>
+      <a class="btn" href="https://github.com/kewinall/enterprise-etl-platform/releases/tag/v0.7.0">v0.7.0 Release ↗</a>
     </div>
   </div>
   <aside class="hero-card">
@@ -256,6 +256,72 @@ details{border-radius:13px;padding:0 15px;box-shadow:none}details+details{margin
       <div class="pillrow"><span class="pill">Pipeline</span><span class="pill">Transform</span><span class="pill">TableOutput</span><span class="pill">Audit Pipeline</span></div>
       <p class="muted">Hop project 被 bake 進 immutable runtime image；環境差異透過 Hop Environment / runtime variable 注入。</p>
     </div>
+  </div>
+</section>
+
+
+<section id="modernization" class="fade">
+  <div class="head">
+    <div><div class="eyebrow">P1 · Legacy Modernization</div><h2>Pentaho → Apache Hop：先建立可信 Metadata，再做遷移</h2></div>
+    <p>Synthetic KTR/KJB case，刻意把 deterministic truth、inference 與 AI commentary 分開。</p>
+  </div>
+
+  <div class="flowbar">
+    <div class="flowstep"><strong>Legacy ETL</strong><small>Pentaho KTR / KJB</small></div>
+    <div class="flowstep"><strong>Parse</strong><small>deterministic evidence</small></div>
+    <div class="flowstep"><strong>Normalize</strong><small>metadata v1.1</small></div>
+    <div class="flowstep"><strong>Modernize</strong><small>Hop target design</small></div>
+    <div class="flowstep"><strong>Validate</strong><small>no AI correctness gate</small></div>
+  </div>
+
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card">
+      <div class="icon">1</div><h3>Migration Mapping</h3>
+      <p class="muted">Table Input、Filter、Lookup、Calculator、Table Output 可建立明確 mapping；Merge Join、Job/Transformation action 與未知 plugin 保留 manual review / manual required。</p>
+    </div>
+    <div class="card">
+      <div class="icon">2</div><h3>Metadata & Lineage</h3>
+      <p class="muted">Pipeline、Step、SQL、Table、Parameter、Variable、Workflow dependency 與 evidence 統一成 metadata v1.1。Structural、inferred-deterministic、AI interpretation 不混用。</p>
+    </div>
+    <div class="card">
+      <div class="icon">3</div><h3>Correctness</h3>
+      <p class="muted">Source/target reconciliation、SQL digest、dependency preservation、representative data reconciliation 與 human review 才是 migration gate。AI 只提供 explanation / recommendation。</p>
+    </div>
+  </div>
+
+  <div class="tw" style="margin-top:16px"><table>
+    <thead><tr><th>Evidence class</th><th>Example</th><th>Authority</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Structural</strong></td><td>explicit step hop、table read/write attachment、KJB workflow reference</td><td>deterministic parser truth</td></tr>
+      <tr><td><strong>Inferred deterministic</strong></td><td>explicit graph path 形成 source table → target table flow</td><td>deterministic derivation；必須標示 inferred</td></tr>
+      <tr><td><strong>AI interpretation</strong></td><td>business meaning、migration explanation、risk note</td><td>commentary only</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout warnbox" style="margin-top:16px">
+    <strong>Column-level capability boundary：</strong>
+    wildcard expansion、dynamic SQL、complex expression、runtime-resolved schema/table、opaque plugin 不會被宣稱為完整 deterministic column lineage。
+  </div>
+
+  <pre><button class="copy" data-copy>Copy</button><code>python scripts/migration_case.py \
+  samples/pentaho_to_hop/legacy_order_enrichment.ktr \
+  --target samples/pentaho_to_hop/hop_order_enrichment.hpl
+
+make p1-integration-smoke</code></pre>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>Controlled Access</h3>
+      <p class="muted"><code>enterprise-etl-platform</code> 產生 ETL domain truth；<code>data-platform-mcp-server</code> 只提供 governed read-only access，不重新解析 Pentaho/Hop。</p>
+    </div>
+    <div class="card">
+      <h3>Enterprise AI Path</h3>
+      <p class="muted">Semantic Analyzer 優先透過 <code>multi-llm-ai-gateway</code> 使用 OpenAI / Anthropic / Gemini / Local。Routing、fallback、cost、policy、authentication 不在 ETL repo 重做。</p>
+    </div>
+  </div>
+
+  <div class="callout okbox" style="margin-top:16px">
+    <strong>Portfolio story：</strong>Legacy ETL → Understand → Normalize Metadata → Analyze → Modernize → Execute → Observe → Govern。RAG 使用文件與 generated descriptions；DataOps Copilot 透過 MCP 取得 evidence，但 Incident RCA 仍屬於 DataOps responsibility。
   </div>
 </section>
 
@@ -466,7 +532,7 @@ docker compose ps
   </div>
   <div id="tab-airgap" class="tabpanel">
     <pre><button class="copy" data-copy>Copy</button><code>bash scripts/verify_offline_bundle.sh \
-  enterprise-etl-offline-v0.6.0.tar.gz \
+  enterprise-etl-offline-v0.7.0.tar.gz \
   /secure/path/trusted-public-key.pem</code></pre>
     <p class="muted">正式環境應使用獨立可信任管道取得的 public key；不要把 bundle 內附 key 自動視為 production trust root。</p>
   </div>
@@ -561,20 +627,20 @@ docker compose ps
     <div class="step"><strong>打開 Architecture</strong><div class="muted">用 30 秒講 Airflow → Hop → PostgreSQL，再補 CI/Supply Chain/Monitoring 包住 lifecycle。</div></div>
     <div class="step"><strong>展示 Runtime Proof</strong><div class="muted">指出 CI 真的跑 failed retry、firing alerts、offline reload identity，而不是只有 YAML。</div></div>
     <div class="step"><strong>挑一個深挖</strong><div class="muted">Data Engineer 面試深挖 Audit/Retry；Platform/SRE 深挖 Supply Chain/Observability。</div></div>
-    <div class="step"><strong>以 Scope Decision 收尾</strong><div class="muted">說明 v0.5 主動停止，v0.6 放 Roadmap，代表有 scope control，而不是不停堆功能。</div></div>
+    <div class="step"><strong>以 Scope Decision 收尾</strong><div class="muted">說明 v0.7 只在 legacy modernization、metadata/lineage 與 enterprise integration 能形成新的 evidence 時才擴充，且仍把 MCP、RAG、RCA、Model Control Plane 留在各自 Repository。</div></div>
   </div>
 </section>
 
 <section class="fade">
   <div class="callout okbox">
-    <strong>Project status：</strong>v0.6.0 是目前作品集完成版。若你是使用者，從 <a href="#quickstart">Quick Start</a> 開始；若你是面試官，建議先看 <a href="#interviewer">5 分鐘速讀</a>、<a href="#architecture">架構</a>、<a href="#cicd">Runtime Proof</a>。
+    <strong>Project status：</strong>v0.7.0 是目前 P1 整合完成版。若你是使用者，從 <a href="#quickstart">Quick Start</a> 開始；若你是面試官，建議先看 <a href="#interviewer">5 分鐘速讀</a>、<a href="#architecture">架構</a>、<a href="#cicd">Runtime Proof</a>。
   </div>
 </section>
 
 <footer class="footer">
-  <p><strong>Enterprise ETL Platform v0.6.0</strong> · Data Engineering Platform Portfolio</p>
+  <p><strong>Enterprise ETL Platform v0.7.0</strong> · Data Engineering Platform Portfolio</p>
   <p>All sample data, hostnames, credentials, schemas and company information are synthetic or generic.</p>
-  <p><a href="https://github.com/kewinall/enterprise-etl-platform">GitHub Repository</a> · <a href="https://github.com/kewinall/enterprise-etl-platform/releases/tag/v0.6.0">Release v0.6.0</a></p>
+  <p><a href="https://github.com/kewinall/enterprise-etl-platform">GitHub Repository</a> · <a href="https://github.com/kewinall/enterprise-etl-platform/releases/tag/v0.7.0">Release v0.7.0</a></p>
 </footer>
 </main>
 
