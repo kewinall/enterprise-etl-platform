@@ -4,148 +4,105 @@
 
 ## 繁體中文
 
-`enterprise-etl-platform` 是以 **Enterprise Data Engineering Platform** 為核心的作品集專案，涵蓋 ETL/ELT execution、Airflow orchestration、Apache Hop runtime、PostgreSQL audit、retry lifecycle、software supply chain、Air-Gapped deployment 與 Observability。
+`enterprise-etl-platform` 是以 **Enterprise Data Engineering Platform** 為核心的作品集專案，涵蓋 ETL/ELT execution、Airflow orchestration、Apache Hop runtime、PostgreSQL audit、retry lifecycle、immutable supply chain、Air-Gapped deployment、Prometheus/Grafana observability、SLO 與 alerting。
 
-### 專案定位
+### v0.5 — Executable Observability
 
-| Repository | 核心角色 |
-|---|---|
-| `enterprise-rag-platform` | Knowledge AI Platform |
-| `agentic-dataops-copilot` | AI Reasoning / DataOps Operations |
-| `data-platform-mcp-server` | Tool / Integration Platform |
-| `multi-llm-ai-gateway` | Model Control Plane |
-| **`enterprise-etl-platform`** | **Data Engineering Platform** |
-
-### v0.4 — Immutable Supply Chain
-
-v0.4 在 v0.3 的 audited ETL lifecycle 上加入：
-
-- Immutable Apache Hop runtime image
-- ETL project bake into image
-- OCI version / revision / source labels
-- Build once → TEST → PROD promotion
-- Same `sha256` image ID enforcement
-- Syft CycloneDX image SBOM
-- Docker offline image archive
-- Promotion manifest
-- SHA-256 checksums
-- OpenSSL detached signatures
-- Air-Gapped verification / `docker load`
-- GitHub Release offline bundle assets
-
-Supply-chain flow：
+v0.5 新增完整監控鏈：
 
 ```text
-Source Commit
-     ↓
-Build Candidate Image
-     ↓
-Immutable Image ID
-     ↓
-TEST reference
-     ↓
-Approval
-     ↓
-PROD reference
-     ↓
-Offline Bundle
-     ├─ image archive
-     ├─ CycloneDX SBOM
-     ├─ manifest
-     ├─ SHA256SUMS
-     └─ detached signature
+PostgreSQL Audit
+      ↓
+etl_observability read-only views
+      ↓
+SQL Exporter
+      ↓
+Prometheus
+  ├─ ETL metrics
+  ├─ SLO recording rules
+  └─ alert rules
+      ↓
+Alertmanager
+      ↓
+Grafana
 ```
 
-**PROD 不重新 build。**
+核心內容：
 
-### ETL lifecycle
+- SQL Exporter **0.24.8**
+- Prometheus **3.14.0**
+- Alertmanager **0.34.0**
+- Grafana **13.2.1**
+- read-only `etl_observability` schema
+- least-privilege `etl_monitor` sample role
+- ETL run / failure / retry counters
+- records-written counter
+- stale RUNNING gauge
+- latest-success timestamp
+- average / P95 duration
+- **99% ETL success SLO**
+- error ratio / error budget recording rules
+- SLO breach / stale execution / no-recent-success alerts
+- auto-provisioned Grafana datasource + dashboard
+- runtime CI observability smoke
 
-v0.3 的 execution/audit 能力完整保留：
+### Metrics
 
 ```text
-Airflow run_id / try_number
-        ↓
-audit_execution_start.hpl
-        ↓
-PostgreSQL RUNNING + STARTED
-        ↓
-synthetic_customer_daily.hpl
-        ↓
-persisted target rows
-        ↓
-audit_execution_finalize.hpl
-        ↓
-SUCCESS / FAILED
+etl_pipeline_run_total
+etl_pipeline_failure_total
+etl_pipeline_retry_total
+etl_records_written_total
+etl_running_stale_total
+etl_last_success_timestamp_seconds
+etl_pipeline_duration_seconds
+etl_pipeline_duration_p95_seconds
 ```
 
 ### 快速驗證
 
 ```bash
 cp .env.example .env
-
 python scripts/validate_repository.py
 python -m unittest discover -s tests -v
 docker compose config --quiet
 
 make lifecycle-smoke
+make observability-smoke
 make supply-chain-smoke
 ```
 
-`make supply-chain-smoke` 會真的：
+`make observability-smoke` 會實際建立 synthetic SUCCESS / FAILED / retry SUCCESS / stale RUNNING execution，然後驗證 Prometheus scrape、SLO rules、firing alerts、Alertmanager readiness、Grafana datasource 與 dashboard provisioning。
 
-1. Build v0.4 Hop runtime image。
-2. 驗證 OCI provenance labels。
-3. Candidate → TEST → PROD retag。
-4. 驗證三者 image ID 完全一致。
-5. 產生 CycloneDX image SBOM。
-6. 建立 offline bundle。
-7. 產生 SHA-256 與 detached signature。
-8. 移除 local image references。
-9. 從 archive `docker load`。
-10. 再驗 loaded image ID。
-
-### 啟動
+### 啟動 Monitoring Stack
 
 ```bash
-docker compose --profile orchestration up -d --build
+docker compose --profile monitoring up -d
 docker compose ps
 ```
 
-- Airflow UI: `http://localhost:8080`
-- Hop Server: `http://localhost:8181`
-- PostgreSQL: `localhost:5432`
-- DAG: `hop_synthetic_customer_daily`
+- Grafana: `http://localhost:3000`
+- Prometheus: `http://localhost:9090`
+- Alertmanager: `http://localhost:9093`
+- SQL Exporter: `http://localhost:9399/metrics`
+- Dashboard: **Enterprise ETL Operations**
 
-> 所有 Sample Data、Hostname、Credential、Schema 與公司資訊均為 synthetic / generic。正式 Credential 不 bake 進 image。
+> Repository 只含 synthetic / generic configuration。正式 database、Grafana、Alertmanager credential 與 notification endpoint 應由部署環境注入。
 
 詳細文件：
 
-- `docs/ARCHITECTURE.md`
-- `docs/ORCHESTRATION.md`
+- `docs/OBSERVABILITY.md`
+- `docs/SLO_ALERTING.md`
 - `docs/AUDIT_LIFECYCLE.md`
 - `docs/SUPPLY_CHAIN.md`
-- `docs/SECURITY.md`
 - `docs/GOVERNANCE.md`
 
 ## English
 
-`enterprise-etl-platform` is an **Enterprise Data Engineering Platform** portfolio project covering ETL execution, Airflow orchestration, Apache Hop runtime, PostgreSQL audit, retry lifecycle management, software-supply-chain controls, air-gapped delivery, and observability.
+`enterprise-etl-platform` is an **Enterprise Data Engineering Platform** portfolio project covering ETL execution, orchestration, audit/retry lifecycle, immutable supply chain, air-gapped delivery, and executable observability.
 
-### v0.4 — Immutable Supply Chain
+v0.5 adds SQL Exporter 0.24.8, Prometheus 3.14.0, Alertmanager 0.34.0, Grafana 13.2.1, read-only ETL metric views, a 99% success SLO, error-budget recording rules, operational alerts, and an auto-provisioned operations dashboard.
 
-v0.4 packages the Hop project into an immutable runtime image, records OCI provenance labels, enforces build-once promotion across candidate/TEST/PROD references, generates a CycloneDX image SBOM, and creates a signed/checksummed offline transfer bundle.
+`make observability-smoke` creates synthetic success/failure/retry/stale executions and proves metrics, SLO rules, firing alerts, Alertmanager, and Grafana provisioning at runtime.
 
-CI removes the local promoted image references, reloads the Docker archive, and proves the loaded image ID matches the original candidate. Production credentials remain runtime-injected and are not baked into the image.
-
-### Quick validation
-
-```bash
-cp .env.example .env
-python scripts/validate_repository.py
-python -m unittest discover -s tests -v
-docker compose config --quiet
-make lifecycle-smoke
-make supply-chain-smoke
-```
-
-All sample data, hostnames, credentials, schemas, and company information are synthetic or generic.
+All sample data, credentials, hostnames, schemas, and company information are synthetic or generic.
