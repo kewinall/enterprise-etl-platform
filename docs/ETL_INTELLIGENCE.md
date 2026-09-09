@@ -4,102 +4,90 @@
 
 ### 定位
 
-v0.6 將平台從 runtime/audit/observability 延伸到 design-time ETL intelligence，但責任仍屬於 Enterprise Data Engineering Platform。
+v0.7 的 ETL Intelligence 是 **Legacy ETL Modernization 的 semantic layer**，不是 structural truth engine。
 
 核心原則：
 
-Deterministic parser = structural truth  
-AI semantic analyzer = semantic commentary
+- Deterministic parser = structural truth
+- Normalized metadata = ETL domain contract
+- Migration validator = correctness evidence
+- AI semantic analyzer = evidence-bound commentary
+- Multi-LLM AI Gateway = preferred model control plane
 
-AI 不解析原始 ETL artifact，也不覆寫 parser truth。
+### Supported deterministic inputs
 
-### Data flow
+- Apache Hop XML: `.hpl / .hwf / .xml`
+- synthetic generic legacy JSON
+- synthetic Pentaho transformation: `.ktr`
+- synthetic Pentaho job: `.kjb`
 
-Legacy ETL / Apache Hop
-→ Deterministic ETL Parser
-→ Normalized Metadata
-→ Sensitive-data filtering
-→ AI Semantic Analyzer
-→ Evidence-bound ETL Intelligence
+Pentaho support 是 public reference parser，不宣稱涵蓋所有 proprietary plugin。
 
-Normalized Metadata 包含：
+### Normalized metadata v1.1
 
-- Pipeline / Workflow
-- Step
-- Hop / Dependency
-- SQL
-- Source / Target
-- Table
-- Field
-- Connection reference
-- Provenance / source SHA-256
-- Evidence locator
+包含 Pipeline、Step、Source、Target、Table、Column/Field declaration、SQL、Step dependency、Workflow dependency、Connection reference、Parameter、Variable、Evidence locator、source SHA-256、Lineage classification 與 Capability boundary。
 
-### Deterministic parsing
+### Lineage authority
 
-目前 reference implementation 支援：
+`lineage.structural`：explicit artifact facts。  
+`lineage.inferred`：由 explicit graph path 或保守 SQL table reference deterministic 推導。  
+`lineage.ai_interpretation`：保留為空的 truth contract；AI interpretation 存在 semantic result，不得冒充 deterministic lineage。
 
-- Apache Hop XML: .hpl / .hwf / generic XML root
-- synthetic generic legacy ETL JSON
+完整說明見 `docs/METADATA_LINEAGE.md`。
 
-Parser 只做可重現的結構抽取，不猜測商業語意。
+### Migration assistance
 
-執行：
+`MigrationPlanner` 將元件分類為：
+
+- direct
+- direct-with-validation
+- manual-review
+- manual-required
+
+`MigrationValidator` deterministic 比對 source/target tables、SQL digest、parameter、variable 與 named step preservation。AI 不參與 PASS/FAIL。
 
 ~~~bash
-python scripts/etl_intelligence.py parse   samples/etl_intelligence/generic_order_enrichment.json   --output /tmp/metadata.json
+python scripts/migration_case.py   samples/pentaho_to_hop/legacy_order_enrichment.ktr   --target samples/pentaho_to_hop/hop_order_enrichment.hpl
 ~~~
 
-### AI boundary
+### AI boundary and Gateway
 
-只有 normalized metadata 可以進入 AI context。Connection credential 不傳入；SQL string literal 會被 redaction。
+只有 filtered normalized metadata 可進入 LLM。Connection credential 不傳入；SQL literal 會 redaction；variable value 不傳入。
 
-AI output 必須：
+Portfolio reference architecture 使用：
 
-- 使用固定 structured contract
-- 引用 parser 產生的 evidence_refs
-- SQL explanation 只能引用已存在 sql_id
-- dependency explanation 只能引用已存在 step
-- 不得新增不存在的 table / field / dependency
-- 保留 parser_truth_digest
+~~~text
+ETL Intelligence
+      |
+      v
+OpenAICompatibleGatewayClient
+      |
+      v
+Multi-LLM AI Gateway
+      |
+OpenAI / Anthropic / Gemini / Local
+~~~
 
-任何 contract violation 都會被拒絕並降級成 deterministic fallback。
+Gateway 負責 model routing、fallback、provider abstraction、authentication、policy、budget/cost。ETL repo 不重新實作這些能力。
 
-### AI unavailable fallback
+Local tests 可直接注入 mock callable，確保 unit test 與 deterministic correctness 不依賴 LLM。
 
-未設定 AI client 時仍可輸出：
+### Failure modes
 
-- pipeline step count
-- step type summary
-- deterministic dependency summary
-- SQL presence
-- warning / provenance
+- LLM unavailable → fallback，parser truth 仍可用。
+- LLM 回傳 unknown evidence / SQL / dependency → reject + fallback。
+- unsupported legacy component → manual-required。
+- uncertain join / variable scope → manual-review。
+- column lineage 不可證明 → capability boundary，不做過度宣稱。
 
-因此 design-time inspection 不依賴 LLM availability。
+### Responsibility boundary
 
-### Provenance and evidence
-
-Parser output 包含 source SHA-256 與每一個 extracted fact 的 locator。AI result 只保留解釋，不成為 structural source of truth。
-
-### Portfolio responsibility boundary
-
-本功能只回答 ETL design-time 問題：
-
-- pipeline summary
-- business logic explanation
-- SQL explanation
-- source → target interpretation
-- dependency summary
-- migration assistance
-
-不負責 runtime incident RCA；runtime RCA 仍屬於 agentic-dataops-copilot 的責任範圍。
+ETL Intelligence 不負責 runtime Incident RCA；DataOps Copilot 才負責 incident reasoning。ETL repo 也不實作 MCP transport、RAG retrieval 或 model routing。
 
 ## English
 
-v0.6 introduces design-time ETL intelligence while preserving the repository boundary as an Enterprise Data Engineering Platform.
+v0.7 treats ETL Intelligence as the semantic layer of a deterministic modernization workflow.
 
-The deterministic parser is the authoritative source for structure. The AI analyzer receives only normalized, filtered metadata and may produce semantic commentary. It cannot mutate parser truth.
+Pentaho KTR/KJB and Apache Hop artifacts become normalized metadata v1.1. Structural lineage, deterministic inference, and AI interpretation are explicitly separated. The migration validator remains deterministic; AI never decides migration correctness.
 
-AI output is schema-bound, evidence-bound, and validated against known parser evidence, SQL IDs, and dependency nodes. Invalid or unavailable AI output falls back to deterministic summaries.
-
-This feature intentionally excludes runtime incident RCA.
+The preferred LLM path is the portfolio Multi-LLM AI Gateway through an OpenAI-compatible adapter. The ETL repository does not duplicate routing, fallback, provider, authentication, or cost-governance responsibilities.
