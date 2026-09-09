@@ -241,7 +241,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "etl_pipeline_runs_total{environment_name=~\"$environment\",pipeline_name=~\"$pipeline\"}",
+          "expr": "etl_pipeline_run_total{environment_name=~\"$environment\",pipeline_name=~\"$pipeline\"}",
           "legendFormat": "{{status}} / {{pipeline_name}}"
         }
       ],
@@ -439,7 +439,7 @@
           "uid": "prometheus"
         },
         "query": {
-          "query": "label_values(etl_pipeline_runs_total, environment_name)",
+          "query": "label_values(etl_pipeline_run_total, environment_name)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
@@ -458,7 +458,7 @@
           "uid": "prometheus"
         },
         "query": {
-          "query": "label_values(etl_pipeline_runs_total, pipeline_name)",
+          "query": "label_values(etl_pipeline_run_total, pipeline_name)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
