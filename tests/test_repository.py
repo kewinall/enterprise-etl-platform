@@ -7,8 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class RepositoryBaselineTest(unittest.TestCase):
-    def test_version_is_v0_4(self):
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "0.4.0")
+    def test_version_is_v0_5(self):
+        self.assertEqual((ROOT / "VERSION").read_text().strip(), "0.5.0")
 
     def test_v0_3_audit_schema_models_retry_lifecycle(self):
         sql = (ROOT / "postgres/init/002_v0_3_audit_lifecycle.sql").read_text()
@@ -215,6 +215,106 @@ class RepositoryBaselineTest(unittest.TestCase):
         self.assertIn("--name offline-bundle", release)
         self.assertIn("gh release upload", release)
         self.assertIn("--clobber", release)
+
+
+    def test_v0_5_observability_schema_is_read_only_surface(self):
+        sql = (ROOT / "postgres/init/003_v0_5_observability.sql").read_text()
+        for token in (
+            "etl_observability",
+            "pipeline_status_totals",
+            "pipeline_runtime_metrics",
+            "etl_monitor",
+            "synthetic-monitor-password",
+            "stale_running",
+            "p95_duration_seconds",
+        ):
+            self.assertIn(token, sql)
+        self.assertIn("WHERE status IN ('SUCCESS', 'FAILED')", sql)
+
+    def test_sql_exporter_exposes_etl_metric_contract(self):
+        collector = (
+            ROOT / "monitoring/sql-exporter/etl_audit.collector.yml"
+        ).read_text()
+        for metric in (
+            "etl_pipeline_run_total",
+            "etl_pipeline_failure_total",
+            "etl_pipeline_retry_total",
+            "etl_records_written_total",
+            "etl_running_stale_total",
+            "etl_last_success_timestamp_seconds",
+            "etl_pipeline_duration_seconds",
+            "etl_pipeline_duration_p95_seconds",
+        ):
+            self.assertIn(metric, collector)
+
+        config = (ROOT / "monitoring/sql-exporter/sql_exporter.yml").read_text()
+        self.assertIn("etl_monitor", config)
+        self.assertIn("etl_audit", config)
+
+    def test_prometheus_has_slo_recording_and_alert_rules(self):
+        config = (ROOT / "monitoring/prometheus/prometheus.yml").read_text()
+        rules = (ROOT / "monitoring/prometheus/rules/etl.rules.yml").read_text()
+        self.assertIn("sql-exporter:9399", config)
+        self.assertIn("alertmanager:9093", config)
+        for token in (
+            "etl:slo_success_ratio",
+            "etl:slo_error_ratio",
+            "etl:slo_error_budget_remaining",
+            "ETLPipelineSLOBreach",
+            "ETLStaleRunningExecution",
+            "ETLNoRecentSuccess",
+            "0.99",
+        ):
+            self.assertIn(token, rules)
+
+    def test_grafana_dashboard_and_datasource_are_provisioned(self):
+        dashboard = json.loads(
+            (
+                ROOT
+                / "monitoring/grafana/dashboards/enterprise-etl-operations.json"
+            ).read_text()
+        )
+        self.assertEqual(dashboard["uid"], "enterprise-etl-ops")
+        self.assertEqual(dashboard["title"], "Enterprise ETL Operations")
+        self.assertGreaterEqual(len(dashboard["panels"]), 8)
+
+        datasource = (
+            ROOT
+            / "monitoring/grafana/provisioning/datasources/prometheus.yml"
+        ).read_text()
+        self.assertIn("uid: prometheus", datasource)
+        self.assertIn("http://prometheus:9090", datasource)
+
+    def test_compose_has_monitoring_profile(self):
+        compose = (ROOT / "docker-compose.yml").read_text()
+        for token in (
+            "burningalchemist/sql_exporter:0.24.8",
+            "prom/prometheus:v3.14.0",
+            "prom/alertmanager:v0.34.0",
+            "grafana/grafana:13.2.1",
+            'profiles: ["monitoring"]',
+            "./monitoring/prometheus",
+            "./monitoring/grafana",
+        ):
+            self.assertIn(token, compose)
+
+    def test_observability_smoke_proves_metrics_rules_alerts_and_dashboard(self):
+        smoke = (ROOT / "scripts/observability_smoke.sh").read_text()
+        for token in (
+            "promtool",
+            "etl_pipeline_run_total",
+            "etl_pipeline_failure_total",
+            "ETLPipelineSLOBreach",
+            "ETLStaleRunningExecution",
+            "/api/v1/alerts",
+            "/api/search",
+            "enterprise-etl-ops",
+        ):
+            self.assertIn(token, smoke)
+
+    def test_ci_runs_observability_smoke(self):
+        ci = (ROOT / ".github/workflows/ci.yml").read_text()
+        self.assertIn("observability_smoke.sh", ci)
 
 
 if __name__ == "__main__":
