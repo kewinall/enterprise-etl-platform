@@ -22,6 +22,9 @@ REQUIRED_DOCS = [
     "docs/GITLAB_CICD.md",
     "docs/ENVIRONMENT_PROMOTION.md",
     "docs/VULNERABILITY_MANAGEMENT.md",
+    "docs/PENTAHO_TO_HOP_MIGRATION.md",
+    "docs/METADATA_LINEAGE.md",
+    "docs/PORTFOLIO_INTEGRATION.md",
 ]
 REQUIRED_IMPLEMENTATION = [
     ".gitlab-ci.yml",
@@ -34,6 +37,14 @@ REQUIRED_IMPLEMENTATION = [
     "scripts/vulnerability_lifecycle_smoke.sh",
     "scripts/registry_promote.sh",
     "scripts/verify_image_digest.sh",
+    "etl_intelligence/metadata.py",
+    "etl_intelligence/pentaho.py",
+    "etl_intelligence/migration.py",
+    "etl_intelligence/gateway.py",
+    "scripts/migration_case.py",
+    "scripts/p1_integration_smoke.sh",
+    "samples/pentaho_to_hop/legacy_order_enrichment.ktr",
+    "samples/pentaho_to_hop/legacy_daily_orders.kjb",
 ]
 FORBIDDEN_TOKENS = [
     "10." + "0.0.",
@@ -64,8 +75,8 @@ def main() -> int:
         if not (ROOT / rel).exists():
             errors.append(f"missing required implementation: {rel}")
 
-    if (ROOT / "VERSION").read_text(encoding="utf-8").strip() != "0.6.0":
-        errors.append("VERSION must be 0.6.0 for the v0.6 release")
+    if (ROOT / "VERSION").read_text(encoding="utf-8").strip() != "0.7.0":
+        errors.append("VERSION must be 0.7.0 for the v0.7 release")
 
     releases_dir = ROOT / "docs/releases"
     if releases_dir.exists():

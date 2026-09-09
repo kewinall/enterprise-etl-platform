@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<job>
+  <name>legacy_daily_orders</name>
+  <parameters>
+    <parameter><name>RUN_DATE</name><default_value>2026-01-01</default_value><description>Synthetic orchestration date</description></parameter>
+  </parameters>
+  <entries>
+    <entry><name>START</name><type>SPECIAL</type></entry>
+    <entry><name>Order Enrichment</name><type>TRANS</type><filename>legacy_order_enrichment.ktr</filename></entry>
+    <entry><name>SUCCESS</name><type>SUCCESS</type></entry>
+  </entries>
+  <hops>
+    <hop><from>START</from><to>Order Enrichment</to><enabled>Y</enabled></hop>
+    <hop><from>Order Enrichment</from><to>SUCCESS</to><enabled>Y</enabled></hop>
+  </hops>
+</job>

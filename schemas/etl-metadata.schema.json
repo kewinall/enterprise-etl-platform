@@ -3,10 +3,17 @@
   "$id": "https://example.invalid/schemas/etl-metadata.schema.json",
   "title": "Normalized ETL Metadata",
   "type": "object",
-  "required": ["schema_version", "pipeline", "steps", "hops", "sql", "sources", "targets", "tables", "fields", "connections", "evidence", "provenance"],
+  "required": [
+    "schema_version", "pipeline", "steps", "hops", "sql", "sources", "targets",
+    "tables", "fields", "columns", "connections", "dependencies", "parameters",
+    "variables", "lineage", "capability_boundaries", "evidence", "provenance"
+  ],
   "properties": {
-    "schema_version": {"const": "1.0"},
-    "pipeline": {"type": "object", "required": ["name", "kind", "format", "source_path"]},
+    "schema_version": {"const": "1.1"},
+    "pipeline": {
+      "type": "object",
+      "required": ["name", "kind", "format", "source_path"]
+    },
     "steps": {"type": "array"},
     "hops": {"type": "array"},
     "sql": {"type": "array"},
@@ -14,9 +21,27 @@
     "targets": {"type": "array"},
     "tables": {"type": "array"},
     "fields": {"type": "array"},
+    "columns": {"type": "array"},
     "connections": {"type": "array"},
+    "dependencies": {"type": "array"},
+    "parameters": {"type": "array"},
+    "variables": {"type": "array"},
+    "lineage": {
+      "type": "object",
+      "required": ["structural", "inferred", "ai_interpretation"],
+      "properties": {
+        "structural": {"type": "array"},
+        "inferred": {"type": "array"},
+        "ai_interpretation": {"type": "array"}
+      },
+      "additionalProperties": false
+    },
+    "capability_boundaries": {"type": "array", "items": {"type": "string"}},
     "evidence": {"type": "array"},
-    "provenance": {"type": "object", "required": ["parser", "source_sha256", "ai_used"]}
+    "provenance": {
+      "type": "object",
+      "required": ["parser", "source_sha256", "ai_used"]
+    }
   },
   "additionalProperties": false
 }

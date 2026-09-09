@@ -4,67 +4,75 @@
 
 ### Platform lifecycle
 
-Design → Parse → Normalize → Semantic Analyze → Validate → Test → Security Gate → Build → TEST → Approve → Promote → PROD → Observe → Audit
+Understand → Parse → Normalize → Analyze → Modernize → Validate → Execute → Observe → Govern
 
-### Design-time governance
+### Modernization governance
 
-ETL Intelligence 只處理 design-time：
+Legacy ETL 不直接交給 AI 黑箱轉換。
 
-- deterministic parsing
-- normalized metadata
-- evidence / provenance
-- business-logic explanation
-- SQL explanation
-- source-target interpretation
-- dependency summary
-- migration assistance
+1. source artifact 先由 deterministic parser 產生 metadata + evidence + SHA；
+2. compatibility planner 對元件做 explicit disposition；
+3. manual-review / manual-required 不得被 AI 自動升級成 direct；
+4. target Hop design 必須通過 deterministic validation；
+5. representative data reconciliation 與 human review 才能進 production delivery。
 
-AI 不負責 runtime incident RCA。
+### Metadata / lineage governance
 
-Parser truth 可在沒有 AI 的情況下獨立使用；AI output 必須引用 parser evidence，且透過 parser_truth_digest 與原始 metadata 關聯。
+- structural lineage：explicit artifact fact。
+- inferred-deterministic lineage：必須標示 derivation。
+- AI interpretation：只在 semantic result，不能寫回 deterministic lineage。
+- column-level lineage 無法可靠解析時必須聲明 capability boundary。
+
+### AI governance
+
+AI 只處理 design-time explanation / recommendation。
+
+- context 僅來自 normalized metadata；
+- credential / variable value 不送模型；
+- SQL literal redaction；
+- result 必須 evidence-bound；
+- invalid output fallback；
+- preferred model path 經 Multi-LLM AI Gateway；
+- AI 不負責 runtime Incident RCA，也不作 migration correctness gate。
+
+### MCP / RAG / DataOps governance
+
+ETL repo 是 metadata producer。Data Platform MCP Server 是 controlled read-only access layer，不重新解析 ETL artifact。
+
+RAG 可 ingest ETL docs / generated descriptions / runbooks，但 knowledge answer 不修改 parser truth。
+
+DataOps Copilot 可透過 MCP 取得 pipeline metadata / dependency / lineage / execution context，用於 runtime evidence correlation；RCA ownership 仍在 DataOps repo。
 
 ### Execution governance
 
-每次 execution 仍以 run_id、attempt_number、correlation_id 維持 retry 與 target-data traceability。Retry 是新 attempt，不覆蓋失敗歷史。
+每次 execution 以 run_id、attempt_number、correlation_id 維持 retry 與 target-data traceability。Retry 是新 attempt，不覆蓋失敗歷史。
 
-### Delivery governance
+### Delivery / vulnerability governance
 
 - GitHub Actions：公開 Portfolio CI。
 - GitLab CI：Enterprise Delivery Reference。
-- Build once。
-- TEST / PROD：same registry digest。
-- PROD：manual approval + serialized promotion。
-- Rollback：選擇前一個已批准 digest，不 rebuild。
+- Build once，TEST / PROD same registry digest。
+- PROD manual approval + serialized promotion。
+- vulnerability finding 必須有 applicability / remediation evidence。
+- artifact 改變就重跑 SBOM / scan / tests / TEST。
+- rollback 選擇前一個已批准 digest，不 rebuild。
 
-### Vulnerability governance
+### Production failure / recovery
 
-Scanner finding 必須留下 applicability / remediation decision evidence。
-
-可接受 disposition：
-
-- remediated
-- vendor-backport
-- not-applicable
-- risk-accepted with approval
-
-Artifact 有變更時必須產生新的 candidate digest 並重跑 SBOM / scan / tests / TEST。
-
-### Observability governance
-
-Monitoring 維持 read-only observability surface；Grafana 不直接讀 raw audit table。SLO / alert rules 進 version control，CI 必須證明 rule loading 與關鍵 alert firing。
-
-### Portfolio responsibility boundary
-
-- enterprise-etl-platform：ETL design-time + runtime + delivery/security lifecycle
-- agentic-dataops-copilot：runtime incident reasoning / RCA
-- enterprise-rag-platform：knowledge AI / grounding
-- data-platform-mcp-server：tool / integration layer
-- multi-llm-ai-gateway：model control plane
+| Scenario | Governance response |
+|---|---|
+| unsupported migration component | fail to manual review; do not auto-convert |
+| parser / target mismatch | migration validation fail |
+| AI unavailable or hallucinated | fallback; parser truth preserved |
+| MCP/RAG/Gateway outage | ETL truth/runtime remains independent |
+| audit DB outage | execution truth cannot be confirmed; recover before claiming success |
+| vulnerability gate fail | no promotion |
+| digest mismatch | fail closed |
 
 ## English
 
-v0.6 governs design-time ETL semantic analysis separately from runtime operations.
+v0.7 governs legacy modernization as a deterministic evidence pipeline with AI as an advisory semantic layer.
 
-Parser truth is authoritative and AI output is evidence-bound. Enterprise delivery uses build-once same-digest promotion, explicit vulnerability disposition evidence, manual production approval, and rollback to previously approved immutable artifacts.
+Structural and inferred lineage are explicitly classified, migration correctness does not depend on AI, and adjacent repositories retain MCP access, knowledge retrieval, incident reasoning, and model-control responsibilities.
 
-Adjacent repositories retain incident RCA, knowledge AI, integration, and model-control responsibilities.
+Runtime, delivery, vulnerability, same-digest promotion, audit, and observability governance remain in force.
