@@ -162,6 +162,35 @@ details{border-radius:13px;padding:0 15px;box-shadow:none}details+details{margin
   </div>
 </section>
 
+<section id="engineering-decisions">
+  <div class="section-head">
+    <div><span class="tag">P1 · Engineering Judgment</span><h2>Engineering Decisions & Production Evidence</h2></div>
+    <p>不是只展示元件，而是說明為什麼這樣拆、代價是什麼、失敗時怎麼恢復，以及哪些測試能證明設計真的可執行。</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
+    <div class="card"><h3>Problem</h3><p>企業 ETL 不能只看 scheduler 綠燈；retry、audit、artifact identity、offline delivery、SLO 與 failure history 必須形成同一個 lifecycle。</p></div>
+    <div class="card"><h3>Key Decision</h3><p><b>Airflow = orchestration</b>、<b>Hop = data processing</b>、<b>PostgreSQL = execution truth</b>。責任清楚，但也增加跨 runtime correlation 成本。</p></div>
+    <div class="card"><h3>Production Principle</h3><p>Build once、promote same artifact；Monitoring 從 read-only audit views 匯出，避免 observability 與 execution truth 綁死。</p></div>
+  </div>
+  <div class="table-wrap" style="margin-top:16px"><table>
+    <thead><tr><th>Decision</th><th>Benefit</th><th>Trade-off</th></tr></thead>
+    <tbody>
+      <tr><td>Airflow + Hop responsibility split</td><td>Scheduling/retry 與 transformation 各自演進</td><td>多一層 runtime、connection 與 failure correlation</td></tr>
+      <tr><td>PostgreSQL audit as execution truth</td><td>Run / Attempt / Event 可持久化，retry 不覆蓋歷史</td><td>新增 HA、backup、schema migration dependency</td></tr>
+      <tr><td>Immutable promotion</td><td>TEST / PROD 可驗證同一 image identity</td><td>需要 bundle、checksum、promotion lifecycle</td></tr>
+    </tbody>
+  </table></div>
+  <div class="table-wrap" style="margin-top:16px"><table>
+    <thead><tr><th>Failure Scenario</th><th>Engineering Response</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>ETL attempt failed then retry</td><td>Failure 與 retry 保留成不同 attempt，不覆蓋前次 history</td><td><a href="https://github.com/kewinall/enterprise-etl-platform/blob/main/scripts/etl_lifecycle_smoke.sh">etl_lifecycle_smoke.sh</a></td></tr>
+      <tr><td>Monitoring path unavailable</td><td>Execution truth 留在 PostgreSQL；恢復 exporter / Prometheus 後重新 scrape</td><td><a href="https://github.com/kewinall/enterprise-etl-platform/blob/main/scripts/observability_smoke.sh">observability_smoke.sh</a></td></tr>
+      <tr><td>Offline artifact identity mismatch</td><td>驗證失敗就停止 promotion，不以重新 build 取代 identity check</td><td><a href="https://github.com/kewinall/enterprise-etl-platform/blob/main/scripts/supply_chain_smoke.sh">supply_chain_smoke.sh</a></td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout" style="margin-top:16px"><strong>Interview signal：</strong>這個專案要證明的不是「會 Airflow / Hop」，而是能把 execution、audit、delivery、security、observability 與 recovery 串成可驗證的 Data Engineering Platform。</div>
+</section>
+
 <section id="positioning" class="fade">
   <div class="head"><div><div class="eyebrow">02 · Portfolio Positioning</div><h2>作品集中的責任邊界</h2></div><p>避免每個 Repo 都變成「什麼都有」。</p></div>
   <div class="tw"><table>
