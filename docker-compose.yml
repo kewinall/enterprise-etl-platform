@@ -27,20 +27,18 @@ services:
     environment:
       HOP_PROJECT_FOLDER: /files/project
       HOP_PROJECT_NAME: enterprise-etl
+      HOP_ENVIRONMENT_NAME: compose
+      HOP_ENVIRONMENT_CONFIG_FILE_NAME_PATHS: /files/environment/compose.json
       HOP_SERVER_HOSTNAME: 0.0.0.0
       HOP_SERVER_PORT: ${HOP_SERVER_PORT:-8181}
       HOP_SERVER_USER: ${HOP_SERVER_USER:-hop-user}
       HOP_SERVER_PASS: ${HOP_SERVER_PASS:-synthetic-hop-password}
       HOP_LOG_LEVEL: Basic
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: ${POSTGRES_DB:-etl_audit}
-      POSTGRES_USER: ${POSTGRES_USER:-etl_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-synthetic-dev-password}
     ports:
       - "8181:8181"
     volumes:
       - ./hop/projects/enterprise-etl:/files/project:ro
+      - ./hop/environments/compose.json:/files/environment/compose.json:ro
 
   airflow:
     image: ${AIRFLOW_IMAGE:-apache/airflow:3.0.6}
