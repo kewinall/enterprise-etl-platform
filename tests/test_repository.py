@@ -317,5 +317,13 @@ class RepositoryBaselineTest(unittest.TestCase):
         self.assertIn("observability_smoke.sh", ci)
 
 
+    def test_observability_waits_for_target_database_query(self):
+        smoke = (ROOT / "scripts/observability_smoke.sh").read_text()
+        self.assertIn("psql -U", smoke)
+        self.assertIn("-Atqc 'SELECT 1'", smoke)
+        self.assertIn("PostgreSQL target database did not become ready", smoke)
+
+
+
 if __name__ == "__main__":
     unittest.main()
