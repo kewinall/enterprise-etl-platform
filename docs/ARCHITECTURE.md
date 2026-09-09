@@ -2,57 +2,78 @@
 
 ## 繁體中文
 
-### v0.2 執行架構
-
-v0.2 明確切分責任：**Airflow 負責 orchestration，Hop Server 提供受驗證的 execution endpoint，Apache Hop pipeline 負責 data processing**。
+### v0.3 執行架構
 
 ```mermaid
 flowchart LR
-  USER[Operator] --> AF[Apache Airflow]
-  AF -->|Basic Auth REST /hop/execPipeline| HS[Apache Hop Server 2.19]
-  HS --> HPL[synthetic_customer_daily.hpl]
-  HPL --> GEN[Generate synthetic rows]
-  GEN --> SEQ[Add record sequence]
-  SEQ --> LOG[WriteToLog]
+  AF[Apache Airflow] -->|run_id + try_number| AS[audit_execution_start.hpl]
+  AS --> AUDIT[(etl_audit.etl_execution_log)]
+  AUDIT --> EVT[(etl_audit.etl_execution_event)]
 
-  ENV[DEV / TEST / PROD variable] --> AF
-  AF -->|RUN_ENV| HPL
+  AF --> ETL[synthetic_customer_daily.hpl]
+  ETL --> DATA[(etl_data.synthetic_customer_daily)]
 
-  AF -. v0.3 .-> AUDIT[(PostgreSQL ETL Audit)]
-  HS -. v0.3 .-> AUDIT
+  AF --> FIN[audit_execution_finalize.hpl]
+  FIN --> AUDIT
 
-  CI[CI / Security] --> ART[Validated Source / Artifact]
-  ART --> TEST[TEST]
-  TEST --> PROD[PROD Promotion]
+  FAIL{Failure?}
+  ETL --> FAIL
+  FAIL -->|Yes| FIN
+  FIN -->|FAILED then retry| AF
+  FAIL -->|No| FIN
+
+  CI[CI / Security] --> TEST[PostgreSQL + Hop lifecycle smoke]
+  TEST --> REL[Validated main / Release gate]
 ```
 
-### Component responsibility
+### 責任分工
 
-| Component | v0.2 Responsibility |
+| Component | v0.3 Responsibility |
 |---|---|
-| Apache Airflow | DAG scheduling/orchestration、retry、Hop invocation |
-| Apache Hop Server | Authenticated execution gateway for Hop files |
-| Apache Hop pipeline | Data processing logic |
-| PostgreSQL | v0.1 audit schema preserved；完整 execution write 在 v0.3 |
-| Docker Compose | Reproducible local integration |
-| CI | Static validation + real Hop Server API smoke test |
-| Security | Secret policy、Trivy filesystem scan、SBOM |
-| Release gate | main CI + Security 成功後才能建立 Tag / Release |
+| Apache Airflow | Orchestration、retry、run identity、attempt identity |
+| Hop Server | Authenticated execution endpoint |
+| Hop audit pipelines | PostgreSQL lifecycle insert/update |
+| Hop data pipeline | Synthetic ETL persistence |
+| PostgreSQL Audit | Execution attempts + lifecycle events |
+| PostgreSQL Data | Persisted synthetic ETL target |
+| DB Trigger | `finished_at` 與 append-only lifecycle event |
+| CI | 實際驗證 failed attempt + successful retry + target rows |
+| Security | Secret Scan、Trivy、SBOM |
 
-### 為何使用 Hop Server REST
+### Correlation model
 
-v0.2 不掛載 Docker socket 給 Airflow，也不要求額外 Docker/Kubernetes provider。Airflow 使用 Python standard library 對 Hop Server 發出 authenticated HTTP request，將 runtime 與 orchestration 解耦。
+三層共用：
 
-### Environment separation
+- `run_id`
+- `attempt_number`
+- `correlation_id`
 
-`PLATFORM_ENV` 由 Airflow 轉成 `RUN_ENV` 傳入 Hop pipeline。真實 infrastructure endpoint 與 Credential 不應寫入 pipeline；v0.2 sample 只使用 generic values。
+Airflow retry 不修改舊 attempt，而是建立新 attempt。Target data 也保存 attempt identity，因此能做 execution-to-data traceability。
+
+### Database boundary
+
+Hop 的 `audit-postgres` metadata 只保存 variable expressions：
+
+- `${POSTGRES_HOST}`
+- `${POSTGRES_PORT}`
+- `${POSTGRES_DB}`
+- `${POSTGRES_USER}`
+- `${POSTGRES_PASSWORD}`
+
+Repository 不保存真實 database endpoint 或 credential。
+
+### 版本邊界
+
+v0.3 不處理 immutable container image build/promotion、offline image archive、checksum/signing；這些屬於 v0.4。
 
 ## English
 
-### v0.2 execution architecture
+### v0.3 execution architecture
 
-v0.2 separates responsibilities explicitly: **Airflow owns orchestration, Hop Server exposes the authenticated execution endpoint, and Apache Hop pipelines own data processing**.
+Airflow owns orchestration and retry identity. Hop Server executes dedicated audit-start, data-load, and audit-finalize pipelines. PostgreSQL stores one execution row per attempt, append-only lifecycle events, and persisted synthetic target rows.
 
-Airflow calls `/hop/execPipeline` through Basic Auth and passes `RUN_ENV` into the pipeline. This avoids exposing a Docker socket to Airflow and avoids adding an orchestration-specific container provider to the v0.2 baseline.
+`run_id`, `attempt_number`, and `correlation_id` form the cross-layer correlation contract. A retry creates a new attempt rather than overwriting the failed attempt.
 
-PostgreSQL audit tables remain part of the platform foundation, while complete execution writes and retry/error lifecycle persistence are intentionally scheduled for v0.3.
+The Hop PostgreSQL connection is environment-agnostic and stores variable expressions only; real endpoints and credentials are injected at runtime.
+
+Immutable image build/promotion and offline image packaging remain v0.4 scope.
