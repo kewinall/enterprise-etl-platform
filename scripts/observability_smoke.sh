@@ -31,12 +31,20 @@ docker network create "${NETWORK_NAME}" >/dev/null
 
 docker run -d   --name "${POSTGRES_CONTAINER}"   --network "${NETWORK_NAME}"   --network-alias postgres   -e POSTGRES_DB="${POSTGRES_DB}"   -e POSTGRES_USER="${POSTGRES_USER}"   -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD}"   -v "${ROOT_DIR}/postgres/init:/docker-entrypoint-initdb.d:ro"   "${POSTGRES_IMAGE}" >/dev/null
 
+postgres_ready=0
 for _ in $(seq 1 60); do
-  if docker exec "${POSTGRES_CONTAINER}"       pg_isready -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" >/dev/null 2>&1; then
+  if docker exec "${POSTGRES_CONTAINER}"       psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -Atqc 'SELECT 1'       >/dev/null 2>&1; then
+    postgres_ready=1
     break
   fi
   sleep 2
 done
+
+if [[ "${postgres_ready}" -ne 1 ]]; then
+  echo "PostgreSQL target database did not become ready: ${POSTGRES_DB}" >&2
+  docker logs "${POSTGRES_CONTAINER}" || true
+  exit 1
+fi
 
 docker exec -i "${POSTGRES_CONTAINER}"   psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" >/dev/null <<'SQL'
 INSERT INTO etl_audit.etl_execution_log (

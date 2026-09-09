@@ -7,8 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class RepositoryBaselineTest(unittest.TestCase):
-    def test_version_is_v0_5(self):
-        self.assertEqual((ROOT / "VERSION").read_text().strip(), "0.5.0")
+    def test_version_is_v0_6(self):
+        self.assertEqual((ROOT / "VERSION").read_text().strip(), "0.6.0")
 
     def test_v0_3_audit_schema_models_retry_lifecycle(self):
         sql = (ROOT / "postgres/init/002_v0_3_audit_lifecycle.sql").read_text()
@@ -315,6 +315,14 @@ class RepositoryBaselineTest(unittest.TestCase):
     def test_ci_runs_observability_smoke(self):
         ci = (ROOT / ".github/workflows/ci.yml").read_text()
         self.assertIn("observability_smoke.sh", ci)
+
+
+    def test_observability_waits_for_target_database_query(self):
+        smoke = (ROOT / "scripts/observability_smoke.sh").read_text()
+        self.assertIn("psql -U", smoke)
+        self.assertIn("-Atqc 'SELECT 1'", smoke)
+        self.assertIn("PostgreSQL target database did not become ready", smoke)
+
 
 
 if __name__ == "__main__":

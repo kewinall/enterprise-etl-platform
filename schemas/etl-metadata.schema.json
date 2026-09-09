@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/etl-metadata.schema.json",
+  "title": "Normalized ETL Metadata",
+  "type": "object",
+  "required": ["schema_version", "pipeline", "steps", "hops", "sql", "sources", "targets", "tables", "fields", "connections", "evidence", "provenance"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "pipeline": {"type": "object", "required": ["name", "kind", "format", "source_path"]},
+    "steps": {"type": "array"},
+    "hops": {"type": "array"},
+    "sql": {"type": "array"},
+    "sources": {"type": "array"},
+    "targets": {"type": "array"},
+    "tables": {"type": "array"},
+    "fields": {"type": "array"},
+    "connections": {"type": "array"},
+    "evidence": {"type": "array"},
+    "provenance": {"type": "object", "required": ["parser", "source_sha256", "ai_used"]}
+  },
+  "additionalProperties": false
+}

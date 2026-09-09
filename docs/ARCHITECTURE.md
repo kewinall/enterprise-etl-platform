@@ -2,77 +2,98 @@
 
 ## 繁體中文
 
-### v0.5 整體架構
+### v0.6 整體架構
 
-```mermaid
-flowchart LR
-  AF[Apache Airflow] --> HOP[Packaged Apache Hop]
-  HOP --> AUDIT[(PostgreSQL Audit)]
-  HOP --> DATA[(PostgreSQL Data)]
+~~~text
+                     DESIGN-TIME
+Legacy ETL / Hop
+       |
+       v
+Deterministic Parser
+       |
+       v
+Normalized Metadata + Evidence + Source SHA
+       |
+       +--> deterministic fallback
+       |
+       v
+Sensitive Context Boundary
+       |
+       v
+AI Semantic Analyzer
+       |
+       v
+ETL Intelligence
+(summary / logic / SQL / source-target / dependency / migration)
 
-  AUDIT --> VIEW[etl_observability Views]
-  VIEW --> SQLX[SQL Exporter]
-  SQLX --> PROM[Prometheus]
-  PROM --> RULES[SLO / Alert Rules]
-  PROM --> GRAF[Grafana]
-  RULES --> AM[Alertmanager]
+                     RUNTIME
+Airflow --> Packaged Apache Hop --> PostgreSQL Audit + Data
+                                      |
+                                      v
+                               read-only metrics
+                                      |
+                          SQL Exporter --> Prometheus
+                                           |      |
+                                      Alertmanager Grafana
 
-  SRC[Source Commit] --> IMG[Immutable Hop Image]
-  IMG --> TEST[TEST]
-  TEST --> PROD[PROD]
-  PROD --> OFFLINE[Air-Gapped Bundle]
-```
+                     DELIVERY
+Source / MR
+   |
+Validation + Unit + Intelligence Smoke
+   |
+Build Candidate ONCE
+   |
+Trivy + Secret + SBOM + CVE Applicability Gate
+   |
+TEST same registry digest
+   |
+Approval
+   |
+PROD same registry digest
+   |
+Audit Evidence / Air-Gapped Bundle
+~~~
 
-### Observability boundary
+### Structural truth vs semantic commentary
 
-Prometheus 不直接持有 PostgreSQL credential，也不直接執行 SQL。
+| Layer | Authority | May infer? |
+|---|---|---|
+| Deterministic parser | ETL structure | No |
+| Normalized metadata | Canonical extracted facts | No |
+| AI semantic analyzer | Explanation only | Yes, but only within evidence |
+| Runtime audit | Execution truth | No |
+| Observability | Derived operational metrics | No structural authority |
 
-責任切分：
+AI result 與 parser metadata 是兩個獨立 artifact。AI result 透過 parser_truth_digest 指向其依據，但不能修改原始 metadata。
 
-| Component | Responsibility |
-|---|---|
-| PostgreSQL audit | execution truth / durable history |
-| `etl_observability` | read-only aggregate surface |
-| SQL Exporter | SQL → Prometheus exposition |
-| Prometheus | scrape / TSDB / recording / alert evaluation |
-| Alertmanager | routing baseline |
-| Grafana | visualization |
-| Airflow/Hop | orchestration / ETL execution |
+### Production failure & recovery
 
-### Read-only metrics surface
+| Failure | Behavior | Recovery |
+|---|---|---|
+| AI unavailable | deterministic metadata 仍產生 | 使用 fallback summary；稍後可重新做 semantic analysis |
+| AI hallucinated evidence / node | output validator 拒絕 | fallback；不污染 parser truth |
+| Sensitive config exists in source | AI context 移除 connection config、SQL literals redaction | 修正 source secret handling；保留 parser evidence |
+| CVE scan blocks | candidate 不得 promotion | applicability analysis → remediate/rebuild → SBOM/rescan |
+| TEST/PROD digest mismatch | promotion fail closed | 回到已驗證 candidate digest，不 rebuild PROD |
+| Monitoring unavailable | PostgreSQL execution truth 保留 | 恢復 exporter/Prometheus/Grafana 後重新 scrape |
+| Offline bundle verification fail | 不部署 | 使用 trusted key/checksum 重新驗證或重新交付 |
 
-`003_v0_5_observability.sql` 建立：
+### Portfolio responsibility boundary
 
-- `etl_observability.pipeline_status_totals`
-- `etl_observability.pipeline_runtime_metrics`
-- sample monitor identity `etl_monitor`
+- enterprise-etl-platform：Data Engineering runtime + design-time ETL intelligence + delivery/security lifecycle
+- agentic-dataops-copilot：runtime incident reasoning / RCA / governed operations
+- enterprise-rag-platform：knowledge retrieval / grounding / knowledge governance
+- data-platform-mcp-server：tool / integration protocol layer
+- multi-llm-ai-gateway：model routing / policy / budget / control plane
 
-Raw audit table 不需要直接暴露給 Grafana。
-
-### SLO boundary
-
-第一版 SLO：
-
-`completed ETL success ratio >= 99%`
-
-只有 `SUCCESS` / `FAILED` 進入 monotonic counter；`RUNNING` 狀態透過 gauge 觀察。
-
-### Existing platform layers
-
-v0.1–v0.4 能力仍保留：
-
-- Airflow → Hop executable orchestration
-- PostgreSQL retry-aware audit
-- persisted ETL target
-- immutable image promotion
-- signed/checksummed Air-Gapped bundle
+因此 v0.6 的 AI 能力只服務 ETL design-time，不變成通用 Agent、RAG、MCP 或 Model Gateway。
 
 ## English
 
-v0.5 adds a read-only observability boundary between PostgreSQL audit data and the monitoring stack.
+v0.6 adds a design-time intelligence plane and an enterprise delivery-security plane without changing the repository boundary.
 
-SQL Exporter converts aggregate PostgreSQL views into Prometheus metrics. Prometheus owns time-series storage, SLO recording rules, and alert evaluation; Alertmanager owns routing baseline; Grafana owns visualization.
+The deterministic parser owns ETL structural truth. AI receives only normalized filtered metadata and produces separately validated semantic commentary. Runtime execution truth remains in PostgreSQL audit data.
 
-Only final SUCCESS/FAILED attempts are represented as monotonic run counters. RUNNING health is exposed as gauges such as stale execution count.
+Delivery builds one immutable candidate and promotes the same registry digest through TEST and PROD after security, SBOM, vulnerability, test, and approval gates.
 
-The v0.1–v0.4 orchestration, audit, persistence, immutable promotion, and air-gapped layers remain intact.
+Adjacent portfolio repositories retain runtime RCA, knowledge AI, integration protocol, and model-control responsibilities.

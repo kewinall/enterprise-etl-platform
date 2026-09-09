@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Enterprise ETL Platform v0.5.0 單一 HTML 專案說明、使用教學與面試作品導覽">
+<meta name="description" content="Enterprise ETL Platform v0.6.0：ETL Intelligence、GitLab Delivery、Vulnerability Lifecycle、Runtime、Audit、Observability 與 Air-Gapped Delivery">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#08121f">
-<title>Enterprise ETL Platform v0.5.0｜Interactive Project Guide</title>
+<title>Enterprise ETL Platform v0.6.0｜Interactive Project Guide</title>
 <style>
 :root{
   --bg:#08121f;--bg2:#0d1b2c;--panel:#111f32;--panel2:#172a42;--panel3:#1b314d;
@@ -100,10 +100,10 @@ details{border-radius:13px;padding:0 15px;box-shadow:none}details+details{margin
 <div id="progress"></div>
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="brand">● Enterprise ETL Platform <small>v0.5.0</small></div>
+    <div class="brand">● Enterprise ETL Platform <small>v0.6.0</small></div>
     <nav class="nav">
       <a href="#interviewer">面試官速讀</a><a href="#architecture">架構</a><a href="#lifecycle">ETL Flow</a>
-      <a href="#audit">Audit/Retry</a><a href="#supply">Supply Chain</a><a href="#observe">Observability</a>
+      <a href="#intelligence">ETL Intelligence</a><a href="#audit">Audit/Retry</a><a href="#delivery">Delivery Security</a><a href="#supply">Supply Chain</a><a href="#observe">Observability</a>
       <a href="#quickstart">使用方式</a><a href="#cicd">CI/Security</a><a href="#versions">版本演進</a>
     </nav>
     <div class="actions">
@@ -119,17 +119,17 @@ details{border-radius:13px;padding:0 15px;box-shadow:none}details+details{margin
   <div>
     <div class="kicker">Enterprise Data Engineering Platform · Portfolio Guide</div>
     <h1>把 ETL 從「Job」提升成<br><span class="grad">可治理的平台</span></h1>
-    <p class="lead"><strong>繁體中文：</strong>從 Airflow 排程、Apache Hop 執行、PostgreSQL Audit/Retry/Persistence，一路延伸到 Immutable Image、Air-Gapped Delivery、Prometheus/Grafana、SLO 與 Alerting。</p>
+    <p class="lead"><strong>繁體中文：</strong>從 design-time ETL parsing / semantic intelligence，到 Airflow、Apache Hop、Audit/Retry，再延伸至 GitLab enterprise delivery、CVE remediation、Immutable/Air-Gapped Supply Chain 與 Observability。</p>
     <p class="lead"><strong>English:</strong> A production-oriented ETL platform reference architecture spanning orchestration, execution, auditability, retries, immutable delivery, offline deployment, metrics, SLOs, and alerting.</p>
     <div class="badges">
-      <span class="badge ok">v0.5.0 Portfolio Complete</span><span class="badge">Apache Airflow</span><span class="badge">Apache Hop 2.19</span>
+      <span class="badge ok">v0.6.0 P0 Hardened</span><span class="badge">ETL Intelligence</span><span class="badge">GitLab CI/CD</span><span class="badge">Apache Airflow</span><span class="badge">Apache Hop 2.19</span>
       <span class="badge">PostgreSQL</span><span class="badge">Docker</span><span class="badge">Trivy</span><span class="badge">CycloneDX</span>
       <span class="badge">Prometheus</span><span class="badge">Grafana</span>
     </div>
     <div class="cta">
       <a class="btn" href="#interviewer">5 分鐘了解專案</a>
       <a class="btn" href="#quickstart">立即使用</a>
-      <a class="btn" href="https://github.com/kewinall/enterprise-etl-platform/releases/tag/v0.5.0">v0.5.0 Release ↗</a>
+      <a class="btn" href="https://github.com/kewinall/enterprise-etl-platform/releases/tag/v0.6.0">v0.6.0 Release ↗</a>
     </div>
   </div>
   <aside class="hero-card">
@@ -143,7 +143,7 @@ details{border-radius:13px;padding:0 15px;box-shadow:none}details+details{margin
 </section>
 
 <div class="stats fade">
-  <div class="stat"><strong>5</strong><span>Engineering maturity versions</span></div>
+  <div class="stat"><strong>6</strong><span>Engineering maturity versions</span></div>
   <div class="stat"><strong>3</strong><span>Executable runtime smoke layers</span></div>
   <div class="stat"><strong>8</strong><span>ETL Prometheus metrics</span></div>
   <div class="stat"><strong>99%</strong><span>Success SLO baseline</span></div>
@@ -153,7 +153,7 @@ details{border-radius:13px;padding:0 15px;box-shadow:none}details+details{margin
 <section id="interviewer" class="fade">
   <div class="head"><div><div class="eyebrow">01 · Interviewer Fast Track</div><h2>面試官 5 分鐘速讀</h2></div><p>先看「問題、設計、證據」，再決定要深入哪一層。</p></div>
   <div class="g3 grid">
-    <div class="card"><div class="icon">P</div><h3>Problem</h3><p>企業 ETL 不只是「排程成功」。真正問題包含 retry、稽核、版本一致性、離線交付、CVE、監控、SLO 與故障可追蹤性。</p></div>
+    <div class="card"><div class="icon">P</div><h3>Problem</h3><p>企業 ETL 不只是「排程成功」。還要能在 design-time 正確解析 legacy/Hop ETL、限制 AI hallucination，並治理 retry、CVE、版本一致性、離線交付、監控與 SLO。</p></div>
     <div class="card"><div class="icon">A</div><h3>Architecture</h3><p>Airflow 管 orchestration，Hop 管 data processing，PostgreSQL 管 execution truth；CI/Security、immutable supply chain、Prometheus/Grafana 包住整個 lifecycle。</p></div>
     <div class="card"><div class="icon">✓</div><h3>Proof</h3><p>CI 不是只做 syntax：真的執行 failed attempt → retry success、Prometheus firing alert、image promotion → offline reload identity check。</p></div>
   </div>
@@ -196,7 +196,7 @@ details{border-radius:13px;padding:0 15px;box-shadow:none}details+details{margin
   <div class="tw"><table>
     <thead><tr><th>Repository</th><th>Primary Role</th><th>核心問題</th></tr></thead>
     <tbody>
-      <tr><td><strong>enterprise-etl-platform</strong></td><td>Data Engineering Platform</td><td>ETL 如何被排程、執行、稽核、升版、監控與離線交付？</td></tr>
+      <tr><td><strong>enterprise-etl-platform</strong></td><td>Data Engineering Platform</td><td>ETL 如何被解析與理解，並安全地排程、執行、稽核、升版、監控與離線交付？</td></tr>
       <tr><td>enterprise-rag-platform</td><td>Knowledge AI Platform</td><td>企業知識如何被檢索、Grounding 與治理？</td></tr>
       <tr><td>agentic-dataops-copilot</td><td>Reasoning / Operations</td><td>AI 如何分析 Incident 並提出受治理的操作建議？</td></tr>
       <tr><td>data-platform-mcp-server</td><td>Tool / Integration Layer</td><td>AI 如何標準化、安全存取 Data Platform capabilities？</td></tr>
@@ -371,6 +371,49 @@ SUCCESS + FAILED</code></pre>
   <div class="callout warnbox" style="margin-top:14px"><strong>Production 注意：</strong>Repo 中的 DB/Grafana/Hop/monitor password 都是 synthetic local defaults。正式環境應由 Vault、Secret Manager、Kubernetes Secret 或等價受控機制注入。</div>
 </section>
 
+
+<section id="intelligence" class="fade">
+  <div class="head"><div><div class="eyebrow">v0.6 · Design-time Intelligence</div><h2>ETL Parser + Structured Metadata + AI Semantic Analyzer</h2></div><p>Parser 管 structural truth；AI 只做 evidence-bound semantic understanding。</p></div>
+  <div class="flowbar">
+    <div class="flowstep"><strong>Legacy ETL / Hop</strong><small>synthetic / generic artifacts</small></div>
+    <div class="flowstep"><strong>Deterministic Parser</strong><small>no LLM parsing</small></div>
+    <div class="flowstep"><strong>Normalized Metadata</strong><small>steps · hops · SQL · tables · fields</small></div>
+    <div class="flowstep"><strong>Context Boundary</strong><small>credentials removed · SQL literals redacted</small></div>
+    <div class="flowstep"><strong>Semantic Output</strong><small>structured · evidence refs · fallback</small></div>
+  </div>
+  <div class="g3 grid" style="margin-top:16px">
+    <div class="card"><h3>Parser Truth</h3><p>source SHA-256、evidence locator、step/hop/table/field/SQL 都由 deterministic parser 產生。</p></div>
+    <div class="card"><h3>Hallucination Protection</h3><p>AI 只能引用已存在 evidence、SQL ID 與 dependency node；違反 contract 直接 fallback。</p></div>
+    <div class="card"><h3>Availability</h3><p>沒有 AI client 仍可產生 deterministic summary 與 dependency view，不阻斷 ETL design inspection。</p></div>
+  </div>
+  <pre><code>python scripts/etl_intelligence.py parse samples/etl_intelligence/generic_order_enrichment.json --output /tmp/metadata.json
+python scripts/etl_intelligence.py analyze /tmp/metadata.json --output /tmp/analysis.json
+make etl-intelligence-smoke</code></pre>
+</section>
+
+<section id="delivery" class="fade">
+  <div class="head"><div><div class="eyebrow">v0.6 · Enterprise Delivery Security</div><h2>GitLab CI/CD + CVE Remediation Lifecycle</h2></div><p>GitHub Actions 保留為公開 CI；GitLab reference 展示企業 MR → TEST → Approval → PROD。</p></div>
+  <div class="flowbar">
+    <div class="flowstep"><strong>Validate / Test</strong><small>parser · unit · lifecycle</small></div>
+    <div class="flowstep"><strong>Build Once</strong><small>immutable candidate</small></div>
+    <div class="flowstep"><strong>Security Gates</strong><small>Trivy · Secret · SBOM · CVE</small></div>
+    <div class="flowstep"><strong>TEST</strong><small>same registry digest</small></div>
+    <div class="flowstep"><strong>PROD</strong><small>manual approval · same digest</small></div>
+  </div>
+  <div class="tw" style="margin-top:16px"><table>
+    <thead><tr><th>CVE Stage</th><th>Required evidence</th><th>Fail-closed behavior</th></tr></thead>
+    <tbody>
+      <tr><td>Applicability</td><td>package/CPE、distribution、vendor backport、runtime exposure</td><td>unknown applicable HIGH/MEDIUM/CRITICAL remains blocked</td></tr>
+      <tr><td>Remediation</td><td>fixed version / base image / mitigation / approved acceptance</td><td>new candidate required when artifact changes</td></tr>
+      <tr><td>Verification</td><td>SBOM diff、rescan、regression test、registry digest</td><td>digest mismatch stops promotion</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout okbox" style="margin-top:16px"><strong>Portfolio boundary：</strong>ETL AI 只處理 design-time parsing / explanation / migration assistance；runtime incident RCA 仍由 DataOps Copilot 負責。Model routing、RAG、MCP 也維持在各自 Repository。</div>
+  <pre><code>make vulnerability-smoke
+make gitlab-verify
+bash scripts/verify_image_digest.sh IMAGE_REF sha256:EXPECTED</code></pre>
+</section>
+
 <section id="quickstart" class="fade">
   <div class="head"><div><div class="eyebrow">09 · Quick Start</div><h2>使用方式 / How to Run</h2></div><p>可只驗證 Repository，也可單獨啟動 ETL 或 Monitoring profile。</p></div>
   <div class="tabs">
@@ -423,7 +466,7 @@ docker compose ps
   </div>
   <div id="tab-airgap" class="tabpanel">
     <pre><button class="copy" data-copy>Copy</button><code>bash scripts/verify_offline_bundle.sh \
-  enterprise-etl-offline-v0.5.0.tar.gz \
+  enterprise-etl-offline-v0.6.0.tar.gz \
   /secure/path/trusted-public-key.pem</code></pre>
     <p class="muted">正式環境應使用獨立可信任管道取得的 public key；不要把 bundle 內附 key 自動視為 production trust root。</p>
   </div>
@@ -524,14 +567,14 @@ docker compose ps
 
 <section class="fade">
   <div class="callout okbox">
-    <strong>Project status：</strong>v0.5.0 是目前作品集完成版。若你是使用者，從 <a href="#quickstart">Quick Start</a> 開始；若你是面試官，建議先看 <a href="#interviewer">5 分鐘速讀</a>、<a href="#architecture">架構</a>、<a href="#cicd">Runtime Proof</a>。
+    <strong>Project status：</strong>v0.6.0 是目前作品集完成版。若你是使用者，從 <a href="#quickstart">Quick Start</a> 開始；若你是面試官，建議先看 <a href="#interviewer">5 分鐘速讀</a>、<a href="#architecture">架構</a>、<a href="#cicd">Runtime Proof</a>。
   </div>
 </section>
 
 <footer class="footer">
-  <p><strong>Enterprise ETL Platform v0.5.0</strong> · Data Engineering Platform Portfolio</p>
+  <p><strong>Enterprise ETL Platform v0.6.0</strong> · Data Engineering Platform Portfolio</p>
   <p>All sample data, hostnames, credentials, schemas and company information are synthetic or generic.</p>
-  <p><a href="https://github.com/kewinall/enterprise-etl-platform">GitHub Repository</a> · <a href="https://github.com/kewinall/enterprise-etl-platform/releases/tag/v0.5.0">Release v0.5.0</a></p>
+  <p><a href="https://github.com/kewinall/enterprise-etl-platform">GitHub Repository</a> · <a href="https://github.com/kewinall/enterprise-etl-platform/releases/tag/v0.6.0">Release v0.6.0</a></p>
 </footer>
 </main>
 

@@ -1,0 +1,61 @@
+{
+  "pipeline": {
+    "name": "generic_order_enrichment",
+    "description": "Synthetic design-time ETL sample for parser and semantic analysis tests."
+  },
+  "connections": [
+    {
+      "name": "source-db",
+      "type": "postgresql",
+      "host": "source.example.invalid",
+      "username": "synthetic_reader",
+      "password": "synthetic-password"
+    },
+    {
+      "name": "target-db",
+      "type": "postgresql",
+      "host": "target.example.invalid",
+      "username": "synthetic_writer",
+      "password": "synthetic-password"
+    }
+  ],
+  "steps": [
+    {
+      "id": "read-orders",
+      "name": "Read generic orders",
+      "type": "table_input",
+      "role": "source",
+      "connection": "source-db",
+      "table": "staging.orders",
+      "sql": "SELECT order_id, amount FROM staging.orders WHERE status = 'READY'",
+      "fields": [
+        {"name": "order_id", "type": "String"},
+        {"name": "amount", "type": "Number"}
+      ]
+    },
+    {
+      "id": "normalize-amount",
+      "name": "Normalize amount",
+      "type": "expression",
+      "fields": [
+        {"name": "net_amount", "type": "Number", "expression": "amount"}
+      ]
+    },
+    {
+      "id": "write-orders",
+      "name": "Write generic orders",
+      "type": "table_output",
+      "role": "target",
+      "connection": "target-db",
+      "table": "analytics.orders",
+      "fields": [
+        {"name": "order_id", "target_name": "order_id"},
+        {"name": "net_amount", "target_name": "net_amount"}
+      ]
+    }
+  ],
+  "hops": [
+    {"from": "Read generic orders", "to": "Normalize amount", "enabled": true},
+    {"from": "Normalize amount", "to": "Write generic orders", "enabled": true}
+  ]
+}

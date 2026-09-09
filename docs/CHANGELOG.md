@@ -2,6 +2,29 @@
 
 ## 繁體中文
 
+### [0.6.0] - 2026-09-10
+
+#### Added
+
+- deterministic Apache Hop / legacy JSON ETL parser
+- normalized ETL metadata schemas
+- parser provenance / source SHA-256 / evidence locators
+- AI semantic context boundary、sensitive filtering、structured validation、deterministic fallback
+- synthetic ETL Intelligence sample + smoke/regression tests
+- executable root .gitlab-ci.yml enterprise delivery reference
+- registry same-digest promotion + image digest verifier
+- CVE applicability/remediation gate
+- SBOM diff + pre/post remediation synthetic evidence
+- ETL Intelligence / GitLab / Environment Promotion / Vulnerability Management docs
+
+#### Changed
+
+- Repository 定位強化為 Enterprise ETL Platform with Design-time ETL Intelligence + Enterprise Delivery Security
+- v0.6 吸收原 Roadmap 的 deployment governance hardening
+- GitHub CI 增加 P0 validation；GitHub Actions 仍為 public portfolio CI
+- PROD promotion 明確禁止 rebuild
+
+
 ### [0.5.0] - 2026-09-09
 
 #### Added
@@ -51,6 +74,27 @@
 - Enterprise Data Engineering Platform foundation
 
 ## English
+
+### [0.6.0] - 2026-09-10
+
+#### Added
+
+- deterministic Apache Hop / legacy JSON ETL parser
+- normalized schemas, provenance, source digest, and evidence locators
+- filtered evidence-bound semantic-analysis boundary with deterministic fallback
+- synthetic ETL Intelligence smoke/regression evidence
+- executable GitLab CI/CD enterprise reference
+- same-registry-digest promotion and digest verification
+- remediation-driven CVE gate and SBOM diff evidence
+- ETL Intelligence, GitLab, environment-promotion, and vulnerability-management documentation
+
+#### Changed
+
+- repository positioning now explicitly includes design-time ETL intelligence and enterprise delivery security
+- v0.6 incorporates deployment-governance hardening
+- GitHub Actions remains the public portfolio CI while GitLab models enterprise delivery
+- PROD promotion explicitly prohibits rebuilds
+
 
 ### [0.5.0] - 2026-09-09
 

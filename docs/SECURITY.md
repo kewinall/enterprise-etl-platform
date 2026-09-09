@@ -2,72 +2,68 @@
 
 ## 繁體中文
 
-### v0.5 Security baseline
+### v0.6 Security model
 
-原有控制維持：
+Repository security 現在分成四層：
 
+1. Source / secret controls
+2. ETL AI context boundary
+3. Vulnerability remediation lifecycle
+4. Immutable environment promotion
+
+既有 Trivy、SBOM、signed/checksummed air-gapped bundle、runtime credential injection、read-only observability boundary 全部保留。
+
+### ETL Intelligence security
+
+Deterministic parser 可以讀取結構，但 AI context builder 只輸出 allowlisted normalized metadata。
+
+控制：
+
+- connection config 不進 AI context
+- password / secret / token / credential key redaction
+- SQL string literal redaction
+- AI output 必須使用 structured contract
+- factual commentary 必須引用 evidence_refs
+- unknown SQL ID / step / dependency 直接拒絕
+- parser truth 與 AI result 分離
+- AI unavailable / invalid result fail-safe 到 deterministic fallback
+
+### Vulnerability remediation
+
+Scanner finding 必須經 applicability validation，不能只靠版本字串。
+
+Gate 支援的 evidence decision：
+
+- remediated
+- not-applicable + evidence
+- vendor-backport + advisory
+- risk-accepted + approval reference
+
+Linux / Python / Container / Base Image 的 synthetic examples 與 regression test 位於 samples/security 與 tests/test_vulnerability_management.py。
+
+### GitLab enterprise delivery
+
+Root .gitlab-ci.yml 展示：
+
+- validation / tests
 - Secret Scan
-- Trivy filesystem scan
-- Repository CycloneDX SBOM
-- Image SBOM
-- immutable image identity
-- signed/checksummed offline bundle
-- runtime credential injection
+- repository + image Trivy
+- CycloneDX SBOM
+- CVE lifecycle gate
+- immutable candidate
+- TEST digest verification
+- manual serialized PROD promotion
 
-新增 observability controls：
+PROD 不重新 build。
 
-1. SQL Exporter 經 `etl_observability` read-only views 取得資料。
-2. Grafana 只讀 Prometheus，不直接讀 PostgreSQL。
-3. Repository credential 全為 synthetic sample。
-4. Alertmanager local receiver 不含外部 webhook/token。
-5. Monitoring endpoints 在 production 應限制 private network / ingress。
-6. Grafana production admin credential 必須外部注入。
-7. Notification credential 應由 Secret manager 管理。
-8. Metrics label 不應包含 customer payload、token、password、SQL text 或高基數敏感 identifier。
+### Observability security
 
-### Monitoring data sensitivity
-
-即使 metrics 不含業務 payload，仍可能揭露：
-
-- pipeline names
-- environment
-- failure rate
-- execution frequency
-- last-success time
-- operational health
-
-因此 production Prometheus/Grafana/Alertmanager 仍需：
-
-- authentication
-- authorization
-- TLS
-- retention policy
-- backup policy
-- network isolation
-
-### Synthetic monitor identity
-
-Repository migration 中的 `etl_monitor` / synthetic password 只供 portfolio/local CI。
-
-正式環境應：
-
-- 建立獨立 read-only monitoring identity
-- password/credential 由 Secret 管理
-- restrict CONNECT / schema usage / view SELECT
-- 定期 rotation
-
-### Alertmanager
-
-`portfolio-null` receiver 故意不向外發送。
-
-Slack、Teams、Email、PagerDuty 等 integration 不應在 repository 中保存真實 token/webhook。
+Monitoring 仍經 etl_observability read-only surface。Grafana 不直接讀 raw PostgreSQL audit table；production endpoints 必須有 authn/authz、TLS、private-network controls 與 retention policy。
 
 ## English
 
-v0.5 preserves the existing repository, image, SBOM, signing, and runtime-secret controls while adding a monitoring security boundary.
+v0.6 preserves the existing secret, Trivy, SBOM, signing, air-gapped, runtime-secret, and observability controls while adding an allowlisted AI context boundary, evidence-bound semantic output, remediation-driven vulnerability gating, and same-digest enterprise promotion.
 
-SQL Exporter reads only aggregate observability views, and Grafana reads Prometheus rather than PostgreSQL directly. Production monitoring endpoints require authentication, TLS, network isolation, retention controls, and externally managed credentials.
+The AI layer is fail-safe: invalid semantic output never changes deterministic parser truth.
 
-Metric labels must not contain sensitive payloads, tokens, passwords, SQL text, or uncontrolled high-cardinality identifiers.
-
-The repository monitoring identity and password are synthetic local examples only.
+Production GitLab deployments should use protected/masked variables, protected environments, authorized approvers, and registry digest identity.

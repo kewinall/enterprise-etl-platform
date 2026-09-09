@@ -1,50 +1,15 @@
-stages:
-  - validate
-  - test
-  - security
-  - package
-  - promote
-
-variables:
-  IMAGE_NAME: "$CI_REGISTRY_IMAGE/enterprise-etl-hop"
-  HOP_BASE_IMAGE: "apache/hop:2.19.0"
-  POSTGRES_IMAGE: "postgres:16-alpine"
-
-validate:
-  stage: validate
-  script:
-    - python scripts/validate_repository.py
-    - docker compose config --quiet
-
-test:
-  stage: test
-  script:
-    - python -m unittest discover -s tests -v
-    - bash scripts/etl_lifecycle_smoke.sh
-
-security:
-  stage: security
-  script:
-    - python scripts/secret_scan.py
-    - trivy fs --exit-code 1 --severity MEDIUM,HIGH,CRITICAL .
-
-package:
-  stage: package
-  script:
-    - IMAGE_REPOSITORY="$IMAGE_NAME" IMAGE_TAG="$CI_COMMIT_SHA" SOURCE_SHA="$CI_COMMIT_SHA" bash scripts/build_runtime_image.sh
-    - IMAGE_REF="$IMAGE_NAME:$CI_COMMIT_SHA" SOURCE_SHA="$CI_COMMIT_SHA" bash scripts/create_offline_bundle.sh
-  artifacts:
-    paths:
-      - dist/release/
-
-promote-test:
-  stage: promote
-  script:
-    - bash scripts/promote_image.sh "$IMAGE_NAME:$CI_COMMIT_SHA" "$IMAGE_NAME:test-$CI_COMMIT_SHA"
-
-promote-prod:
-  stage: promote
-  when: manual
-  script:
-    - bash scripts/promote_image.sh "$IMAGE_NAME:test-$CI_COMMIT_SHA" "$IMAGE_NAME:prod-$CI_COMMIT_SHA"
-    - echo "A registry implementation should promote the same registry digest; never rebuild for PROD."
+# Compact pointer to the executable enterprise reference at repository root.
+# The root .gitlab-ci.yml is intentionally kept alongside GitHub Actions.
+#
+# Validation:
+#   python ci/gitlab/verify_reference.py
+#
+# Enterprise invariants:
+#   - build candidate once
+#   - run unit/security/SBOM/vulnerability gates
+#   - promote candidate to TEST by registry digest
+#   - require approval for PROD
+#   - promote the same digest to PROD; never rebuild
+#
+include:
+  - local: "/.gitlab-ci.yml"
