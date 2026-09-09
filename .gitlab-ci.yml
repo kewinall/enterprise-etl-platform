@@ -1,0 +1,158 @@
+stages:
+  - validate
+  - test
+  - build
+  - security
+  - package
+  - promote_test
+  - release
+  - promote_prod
+
+variables:
+  IMAGE_REPOSITORY: "$CI_REGISTRY_IMAGE/enterprise-etl-hop"
+  CANDIDATE_IMAGE: "$CI_REGISTRY_IMAGE/enterprise-etl-hop:$CI_COMMIT_SHA"
+  TEST_IMAGE: "$CI_REGISTRY_IMAGE/enterprise-etl-hop:test-$CI_COMMIT_SHA"
+  PROD_IMAGE: "$CI_REGISTRY_IMAGE/enterprise-etl-hop:prod-$CI_COMMIT_SHA"
+  DOCKER_HOST: "tcp://docker:2375"
+  DOCKER_TLS_CERTDIR: ""
+
+.python_job:
+  image: python:3.12-slim
+  before_script:
+    - python --version
+
+.docker_job:
+  image: docker:27-cli
+  services:
+    - name: docker:27-dind
+      command: ["--tls=false"]
+  before_script:
+    - docker info
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+
+validate:
+  extends: .python_job
+  stage: validate
+  script:
+    - python scripts/validate_repository.py
+    - python ci/gitlab/verify_reference.py
+    - python -m compileall -q airflow etl_intelligence scripts tests
+
+unit_test:
+  extends: .python_job
+  stage: test
+  script:
+    - python -m unittest discover -s tests -v
+    - bash scripts/etl_intelligence_smoke.sh
+    - bash scripts/vulnerability_lifecycle_smoke.sh
+
+build_candidate:
+  extends: .docker_job
+  stage: build
+  script:
+    - IMAGE_REPOSITORY="$IMAGE_REPOSITORY" IMAGE_TAG="$CI_COMMIT_SHA" SOURCE_SHA="$CI_COMMIT_SHA" bash scripts/build_runtime_image.sh
+    - docker push "$CANDIDATE_IMAGE"
+    - docker image inspect "$CANDIDATE_IMAGE" --format '{{json .Config.Labels}}'
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+
+secret_scan:
+  extends: .python_job
+  stage: security
+  script:
+    - python scripts/secret_scan.py
+
+repository_trivy:
+  image:
+    name: aquasec/trivy:0.65.0
+    entrypoint: [""]
+  stage: security
+  script:
+    - trivy fs --exit-code 1 --severity MEDIUM,HIGH,CRITICAL --ignore-unfixed .
+
+container_trivy:
+  extends: .docker_job
+  stage: security
+  script:
+    - docker pull "$CANDIDATE_IMAGE"
+    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.65.0 image --exit-code 1 --severity MEDIUM,HIGH,CRITICAL --ignore-unfixed "$CANDIDATE_IMAGE"
+
+sbom:
+  extends: .docker_job
+  stage: security
+  script:
+    - mkdir -p dist/security
+    - docker pull "$CANDIDATE_IMAGE"
+    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$CI_PROJECT_DIR/dist/security:/out" anchore/syft:v1.51.1 "$CANDIDATE_IMAGE" -o cyclonedx-json=/out/image-sbom.cdx.json
+    - test -s dist/security/image-sbom.cdx.json
+  artifacts:
+    when: always
+    paths:
+      - dist/security/image-sbom.cdx.json
+
+vulnerability_gate:
+  extends: .python_job
+  stage: security
+  script:
+    - bash scripts/vulnerability_lifecycle_smoke.sh
+
+package_offline:
+  extends: .docker_job
+  stage: package
+  script:
+    - docker pull "$CANDIDATE_IMAGE"
+    - IMAGE_REF="$CANDIDATE_IMAGE" SOURCE_SHA="$CI_COMMIT_SHA" bash scripts/create_offline_bundle.sh
+  artifacts:
+    paths:
+      - dist/release/
+
+promote_test:
+  extends: .docker_job
+  stage: promote_test
+  needs:
+    - build_candidate
+    - secret_scan
+    - repository_trivy
+    - container_trivy
+    - sbom
+    - vulnerability_gate
+    - package_offline
+  script:
+    - mkdir -p dist/promotion
+    - SOURCE_DIGEST="$(bash scripts/registry_promote.sh "$CANDIDATE_IMAGE" "$TEST_IMAGE")"
+    - bash scripts/verify_image_digest.sh "$TEST_IMAGE" "$SOURCE_DIGEST"
+    - printf 'SOURCE_DIGEST=%s\n' "$SOURCE_DIGEST" > dist/promotion/test.env
+  artifacts:
+    reports:
+      dotenv: dist/promotion/test.env
+  environment:
+    name: test
+
+release_candidate:
+  stage: release
+  image: alpine:3.22
+  needs:
+    - promote_test
+  script:
+    - test -n "$SOURCE_DIGEST"
+    - echo "TEST validated immutable digest $SOURCE_DIGEST"
+    - echo "Use a protected GitLab tag/release job or release-cli in the enterprise installation."
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+promote_prod:
+  extends: .docker_job
+  stage: promote_prod
+  needs:
+    - promote_test
+  when: manual
+  allow_failure: false
+  resource_group: production
+  script:
+    - test -n "$SOURCE_DIGEST"
+    - bash scripts/registry_promote.sh "$TEST_IMAGE" "$PROD_IMAGE"
+    - bash scripts/verify_image_digest.sh "$PROD_IMAGE" "$SOURCE_DIGEST"
+  environment:
+    name: production
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
