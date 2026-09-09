@@ -66,7 +66,9 @@ cat > "${RUNTIME_ENV_FILE}" <<EOF
   ]
 }
 EOF
-chmod 600 "${RUNTIME_ENV_FILE}"
+# The file is mounted read-only. 0644 lets the non-root Hop container user read it
+# while keeping write access restricted to the CI host owner.
+chmod 644 "${RUNTIME_ENV_FILE}"
 
 docker run -d \
   --name "${HOP_CONTAINER}" \
