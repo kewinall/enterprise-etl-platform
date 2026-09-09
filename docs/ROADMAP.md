@@ -15,41 +15,28 @@
 - packaged Hop runtime / same-image promotion / SBOM / signed offline bundle
 
 ### v0.5 — Prometheus/Grafana Observability + SLO/Alerting ✅
+- read-only observability views / metrics / alerting / dashboard / runtime smoke
 
-- read-only PostgreSQL observability views
-- SQL Exporter 0.24.8
-- Prometheus 3.14.0
-- Alertmanager 0.34.0
-- Grafana 13.2.1
-- ETL execution/failure/retry metrics
-- stale/last-success/duration metrics
-- 99% success SLO
-- error budget recording rules
-- SLO/stale/no-recent-success alerts
-- auto-provisioned operations dashboard
-- executable observability CI smoke
+### v0.6 — ETL Intelligence + Enterprise Delivery Security ✅
+- deterministic ETL parser
+- normalized metadata / evidence / provenance
+- AI semantic boundary / structured output / fallback / sensitive filtering
+- GitLab CI/CD enterprise reference
+- TEST → PROD same-registry-digest promotion
+- CVE applicability / remediation lifecycle
+- SBOM diff / CVE gate / digest verification / regression evidence
+- deployment governance / rollback identity rules
 
 ### 後續版本
 
-- v0.6：Deployment governance hardening、release/recovery scenarios
+v0.7 僅在作品集確有新增價值時再考慮 multi-environment recovery drill、HA/DR exercise 或更完整 parser adapters；不為版本號而新增功能。
 
 ## English
 
-### v0.1 — Foundation ✅
-Platform boundaries and CI/security baseline.
+v0.1 through v0.5 establish the executable data-engineering runtime, audit, immutable delivery, air-gapped packaging, and observability layers.
 
-### v0.2 — Executable Hop + Airflow Integration ✅
-Real orchestration and executable Hop runtime.
+### v0.6 — ETL Intelligence + Enterprise Delivery Security ✅
 
-### v0.3 — PostgreSQL Audit + Retry Lifecycle ✅
-Retry-aware execution audit and persisted ETL output.
+v0.6 adds deterministic design-time ETL parsing, normalized provenance/evidence, an evidence-bound AI semantic layer with fallback, an executable GitLab delivery reference, same-digest environment promotion, and a remediation-driven vulnerability lifecycle.
 
-### v0.4 — Immutable Supply Chain + Air-Gapped Bundle ✅
-Build-once promotion, image SBOM, signing, and offline delivery.
-
-### v0.5 — Prometheus/Grafana Observability + SLO/Alerting ✅
-Read-only metrics surface, SQL Exporter, Prometheus, Alertmanager, Grafana dashboard, a 99% SLO/error budget, operational alerts, and runtime CI proof.
-
-### Future versions
-
-- v0.6: deployment-governance hardening and failure-recovery scenarios
+Future work is optional and must add portfolio value rather than duplicate adjacent repositories.
