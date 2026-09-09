@@ -17,18 +17,37 @@ docker run -d   --name "${CONTAINER_NAME}"   -p "127.0.0.1:${HOP_SMOKE_PORT}:818
 
 status_url="http://127.0.0.1:${HOP_SMOKE_PORT}/hop/status/?json=Y"
 
+ready=0
 for _ in $(seq 1 60); do
   if curl --fail --silent       --user "${HOP_SMOKE_USER}:${HOP_SMOKE_PASS}"       "${status_url}" >/dev/null; then
+    ready=1
     break
   fi
   sleep 2
 done
 
-curl --fail --silent   --user "${HOP_SMOKE_USER}:${HOP_SMOKE_PASS}"   "${status_url}" >/dev/null
+if [[ "${ready}" -ne 1 ]]; then
+  echo "Hop Server did not become ready."
+  docker logs "${CONTAINER_NAME}" || true
+  exit 1
+fi
 
-response="$(
-  curl --fail --silent --show-error     --user "${HOP_SMOKE_USER}:${HOP_SMOKE_PASS}"     --get "http://127.0.0.1:${HOP_SMOKE_PORT}/hop/execPipeline"     --data-urlencode 'pipeline=${PROJECT_HOME}/pipelines/synthetic_customer_daily.hpl'     --data-urlencode 'runConfig=local'     --data-urlencode 'level=Basic'     --data-urlencode 'json=Y'     --data-urlencode 'RUN_ENV=CI'
+tmp_response="$(mktemp)"
+http_code="$(
+  curl --silent --show-error     --output "${tmp_response}"     --write-out '%{http_code}'     --user "${HOP_SMOKE_USER}:${HOP_SMOKE_PASS}"     --get "http://127.0.0.1:${HOP_SMOKE_PORT}/hop/execPipeline"     --data-urlencode 'pipeline=${PROJECT_HOME}/pipelines/synthetic_customer_daily.hpl'     --data-urlencode 'runConfig=local'     --data-urlencode 'level=Basic'     --data-urlencode 'json=Y'     --data-urlencode 'RUN_ENV=CI'
 )"
+
+response="$(cat "${tmp_response}")"
+rm -f "${tmp_response}"
+
+if [[ "${http_code}" != "200" ]]; then
+  echo "Hop pipeline execution returned HTTP ${http_code}."
+  echo "Response:"
+  printf '%s\n' "${response}"
+  echo "Hop Server logs:"
+  docker logs "${CONTAINER_NAME}" || true
+  exit 1
+fi
 
 printf '%s' "${response}" | python -c '
 import json
