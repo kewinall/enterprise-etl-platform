@@ -2,50 +2,86 @@
 
 ## 繁體中文
 
-v0.2 已有兩層可觀測資料來源，但完整 Prometheus/Grafana stack 仍保留給後續版本。
+v0.3 已有三層可觀測來源：
 
-### Airflow layer
+1. Airflow DAG / task state
+2. Hop Server execution log
+3. PostgreSQL structured execution audit
 
-可觀察：
+### PostgreSQL operational views
 
-- DAG run status
-- Task retry / failure
-- Task duration
-- Hop Server connectivity failure
-- Hop execution response
+失敗 execution：
 
-DAG：`hop_synthetic_customer_daily`
-
-### Hop layer
-
-Hop Server / pipeline log 可觀察：
-
-- pipeline start / finish
-- transform execution
-- `record_id`
-- synthetic field output
-- `RUN_ENV`
-- execution error
-
-```bash
-docker compose logs -f hop
+```sql
+SELECT
+    pipeline_name,
+    environment_name,
+    run_id,
+    attempt_number,
+    error_message,
+    started_at,
+    finished_at
+FROM etl_audit.etl_execution_log
+WHERE status = 'FAILED'
+ORDER BY started_at DESC;
 ```
 
-### PostgreSQL audit
+Retry 次數：
 
-`etl_audit.etl_execution_log` schema 已存在，但 v0.2 不假裝已完成 end-to-end database audit write。v0.3 將加入 execution id、status、records read/written、error lifecycle 與 retry correlation。
+```sql
+SELECT
+    correlation_id,
+    count(*) AS attempts,
+    max(attempt_number) AS max_attempt
+FROM etl_audit.etl_execution_log
+GROUP BY correlation_id
+HAVING count(*) > 1;
+```
+
+Incomplete execution：
+
+```sql
+SELECT *
+FROM etl_audit.etl_execution_log
+WHERE status = 'RUNNING'
+  AND started_at < CURRENT_TIMESTAMP - INTERVAL '30 minutes';
+```
+
+Lifecycle：
+
+```sql
+SELECT
+    l.run_id,
+    l.attempt_number,
+    e.event_type,
+    e.event_at,
+    e.message
+FROM etl_audit.etl_execution_log l
+JOIN etl_audit.etl_execution_event e
+  ON e.execution_id = l.execution_id
+ORDER BY e.event_at DESC;
+```
+
+### Target traceability
+
+`etl_data.synthetic_customer_daily` 可用 `run_id + attempt_number` join 回 audit table。
 
 ### Target metrics
 
 - `etl_pipeline_run_total`
 - `etl_pipeline_failure_total`
+- `etl_pipeline_retry_total`
 - `etl_pipeline_duration_seconds`
-- `etl_records_read_total`
 - `etl_records_written_total`
+- `etl_running_stale_total`
 - `etl_last_success_timestamp`
+
+v0.5 才會把這些正式暴露到 Prometheus/Grafana 與 alert/SLO。
 
 ## English
 
-v0.2 exposes two observable layers: Airflow DAG/task state and Hop Server/pipeline logs. The PostgreSQL audit schema remains available, but complete end-to-end audit writes are intentionally not claimed until v0.3.
+v0.3 provides three observable layers: Airflow task state, Hop Server execution logs, and structured PostgreSQL audit data.
 
-Future metrics include pipeline run/failure counts, duration, records read/written, and last-success timestamps.
+The audit tables now support direct queries for failed attempts, retry counts, stale RUNNING executions, lifecycle events, and target-data traceability.
+
+Prometheus/Grafana metric export, alert rules, and SLOs remain v0.5 scope.
