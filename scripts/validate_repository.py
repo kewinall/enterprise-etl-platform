@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Repository policy checks for the v0.1 portfolio baseline."""
+"""Repository policy checks for the portfolio baseline."""
 
 from pathlib import Path
 
@@ -14,6 +14,7 @@ REQUIRED_DOCS = [
     "docs/CHANGELOG.md",
     "docs/GOVERNANCE.md",
     "docs/OBSERVABILITY.md",
+    "docs/ORCHESTRATION.md",
 ]
 FORBIDDEN_TOKENS = [
     "10." + "0.0.",
@@ -24,6 +25,12 @@ FORBIDDEN_TOKENS = [
 ]
 
 
+def validate_bilingual(path: Path, errors: list[str]) -> None:
+    text = path.read_text(encoding="utf-8")
+    if "繁體中文" not in text or "English" not in text:
+        errors.append(f"document must be bilingual: {path.relative_to(ROOT)}")
+
+
 def main() -> int:
     errors: list[str] = []
 
@@ -32,9 +39,12 @@ def main() -> int:
         if not path.exists():
             errors.append(f"missing required document: {rel}")
             continue
-        text = path.read_text(encoding="utf-8")
-        if "繁體中文" not in text or "English" not in text:
-            errors.append(f"document must be bilingual: {rel}")
+        validate_bilingual(path, errors)
+
+    releases_dir = ROOT / "docs/releases"
+    if releases_dir.exists():
+        for path in releases_dir.glob("v*.md"):
+            validate_bilingual(path, errors)
 
     for path in ROOT.rglob("*"):
         if not path.is_file() or ".git" in path.parts:
