@@ -1,0 +1,10 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "version": 1,
+  "components": [
+    {"type": "operating-system", "name": "base-os", "version": "9.2-synthetic"},
+    {"type": "application", "name": "python-runtime", "version": "3.12.2-synthetic"},
+    {"type": "library", "name": "runtime-library", "version": "1.0-synthetic"}
+  ]
+}
