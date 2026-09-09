@@ -2,15 +2,40 @@
 
 ## 繁體中文
 
-v0.1 先定義觀測模型，不在此版本建置完整 Prometheus/Grafana stack。
+v0.2 已有兩層可觀測資料來源，但完整 Prometheus/Grafana stack 仍保留給後續版本。
 
-### 三個觀測面向
+### Airflow layer
 
-- **Execution**：pipeline status、duration、retry、records read/written。
-- **Platform**：Airflow scheduler/worker、Hop runtime、PostgreSQL health/resource。
-- **Governance**：deployment version、image digest、environment、release、audit trail。
+可觀察：
 
-### 建議 Metrics
+- DAG run status
+- Task retry / failure
+- Task duration
+- Hop Server connectivity failure
+- Hop execution response
+
+DAG：`hop_synthetic_customer_daily`
+
+### Hop layer
+
+Hop Server / pipeline log 可觀察：
+
+- pipeline start / finish
+- transform execution
+- `record_id`
+- synthetic field output
+- `RUN_ENV`
+- execution error
+
+```bash
+docker compose logs -f hop
+```
+
+### PostgreSQL audit
+
+`etl_audit.etl_execution_log` schema 已存在，但 v0.2 不假裝已完成 end-to-end database audit write。v0.3 將加入 execution id、status、records read/written、error lifecycle 與 retry correlation。
+
+### Target metrics
 
 - `etl_pipeline_run_total`
 - `etl_pipeline_failure_total`
@@ -19,10 +44,8 @@ v0.1 先定義觀測模型，不在此版本建置完整 Prometheus/Grafana stac
 - `etl_records_written_total`
 - `etl_last_success_timestamp`
 
-PostgreSQL 的 `etl_audit.etl_execution_log` 是 v0.1 operational audit 的基礎資料來源。
-
 ## English
 
-v0.1 defines the observability model without deploying a full Prometheus/Grafana stack yet.
+v0.2 exposes two observable layers: Airflow DAG/task state and Hop Server/pipeline logs. The PostgreSQL audit schema remains available, but complete end-to-end audit writes are intentionally not claimed until v0.3.
 
-The model covers execution metrics, platform health, and governance metadata. Recommended metrics include pipeline run/failure counts, duration, records read/written, and last-success timestamps. The PostgreSQL `etl_audit.etl_execution_log` table is the initial operational audit source.
+Future metrics include pipeline run/failure counts, duration, records read/written, and last-success timestamps.
