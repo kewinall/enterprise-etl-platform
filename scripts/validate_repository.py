@@ -25,6 +25,8 @@ REQUIRED_DOCS = [
     "docs/PENTAHO_TO_HOP_MIGRATION.md",
     "docs/METADATA_LINEAGE.md",
     "docs/PORTFOLIO_INTEGRATION.md",
+    "docs/ETL_AI_EVALUATION.md",
+    "reports/README.md",
 ]
 REQUIRED_IMPLEMENTATION = [
     ".gitlab-ci.yml",
@@ -45,6 +47,12 @@ REQUIRED_IMPLEMENTATION = [
     "scripts/p1_integration_smoke.sh",
     "samples/pentaho_to_hop/legacy_order_enrichment.ktr",
     "samples/pentaho_to_hop/legacy_daily_orders.kjb",
+    "etl_intelligence/evaluation.py",
+    "scripts/evaluate_etl_ai.py",
+    "evaluation/dataset.json",
+    "tests/test_p2_evaluation.py",
+    "reports/baseline/etl-ai-evaluation-summary.json",
+    "reports/baseline/etl-ai-evaluation-summary.html",
 ]
 FORBIDDEN_TOKENS = [
     "10." + "0.0.",
@@ -75,8 +83,8 @@ def main() -> int:
         if not (ROOT / rel).exists():
             errors.append(f"missing required implementation: {rel}")
 
-    if (ROOT / "VERSION").read_text(encoding="utf-8").strip() != "0.7.0":
-        errors.append("VERSION must be 0.7.0 for the v0.7 release")
+    if (ROOT / "VERSION").read_text(encoding="utf-8").strip() != "0.8.0":
+        errors.append("VERSION must be 0.8.0 for the v0.8 release")
 
     releases_dir = ROOT / "docs/releases"
     if releases_dir.exists():

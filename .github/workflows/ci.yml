@@ -34,6 +34,16 @@ jobs:
       - name: Execute P1 modernization / lineage integration smoke test
         run: bash scripts/p1_integration_smoke.sh
 
+      - name: Execute P2 ETL AI evaluation
+        run: python scripts/evaluate_etl_ai.py --output-dir reports/ci
+
+      - name: Upload P2 ETL AI evaluation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: p2-etl-ai-evaluation
+          path: reports/ci/*
+          if-no-files-found: error
+
       - name: Validate GitLab enterprise delivery reference
         run: python ci/gitlab/verify_reference.py
 
