@@ -2,6 +2,25 @@
 
 ## 繁體中文
 
+### [0.8.0] - 2026-09-10
+
+#### Added
+
+- 10-case synthetic ETL AI evaluation dataset + deterministic ground truth
+- parser precision / recall / F1 / exact-match / failure-rate metrics
+- semantic grounding / completeness / factual-consistency / unsupported-claim checks
+- source / target structural hallucination rejection
+- validation retry + deterministic fallback failure semantics
+- Multi-LLM AI Gateway usage/cost/provider/model/attempt evidence consumption
+- per-pipeline / batch / provider-model aggregation + 243-pipeline projection
+- deterministic repeatability + input-surface ablation
+- JSON / Markdown / Interactive HTML evaluation reports + CI artifact
+
+#### Changed
+
+- maturity criterion shifts from feature count to repeatable evidence
+- unavailable provider tokens/cost remain null rather than estimated or fabricated
+
 ### [0.7.0] - 2026-09-10
 
 #### Added
@@ -94,6 +113,24 @@
 - Enterprise Data Engineering Platform foundation
 
 ## English
+
+### [0.8.0] - 2026-09-10
+
+#### Added
+
+- repository-owned 10-case synthetic ETL evaluation corpus
+- deterministic parser accuracy/failure metrics
+- evidence-bound semantic quality and structural unsupported-claim detection
+- validation retry and deterministic degradation semantics
+- Multi-LLM AI Gateway usage/cost evidence adapter
+- per-pipeline, batch, provider/model aggregation and 243-pipeline projection
+- repeatability and raw-vs-structured input-surface ablation
+- CI-generated machine/human/interactive evaluation reports
+
+#### Changed
+
+- maturity is measured by repeatable evidence rather than feature count
+- unknown provider usage/pricing is represented as null, never fabricated
 
 ### [0.7.0] - 2026-09-10
 

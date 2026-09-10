@@ -11,6 +11,12 @@ class OpenAICompatibleGatewayClientTest(unittest.TestCase):
         response = MagicMock()
         response.__enter__.return_value.read.return_value = json.dumps(
             {
+                "usage": {"prompt_tokens": 120, "completion_tokens": 30},
+                "gateway": {
+                    "provider": "mock", "model": "demo", "cost_usd": 0.0012,
+                    "pricing_known": True, "routing_policy": "priority",
+                    "attempts": [{"target": "mock:demo", "status": "success"}]
+                },
                 "choices": [
                     {
                         "message": {
@@ -48,6 +54,12 @@ class OpenAICompatibleGatewayClientTest(unittest.TestCase):
             result,
             {"pipeline_summary": {"text": "synthetic"}},
         )
+        observation = client.usage_observations()[-1]
+        self.assertEqual(observation["usage"]["prompt_tokens"], 120)
+        self.assertEqual(observation["usage"]["completion_tokens"], 30)
+        self.assertEqual(observation["gateway"]["provider"], "mock")
+        self.assertEqual(observation["gateway"]["model"], "demo")
+        self.assertEqual(observation["gateway"]["cost_usd"], 0.0012)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # Enterprise ETL Platform
 
-**目前版本 / Current release: v0.7.0**
+**目前版本 / Current release: v0.8.0**
 
 > **📘 Interactive Project Guide / 專案互動式說明文件**  
 > [Open Live Project Guide](https://kewinall.github.io/enterprise-etl-platform/) · [Repository HTML](docs/enterprise-etl-platform-guide.html) — 面試官 5 分鐘速讀、完整架構、Airflow → Hop ETL lifecycle、PostgreSQL Audit/Retry、ETL Intelligence、GitLab Enterprise Delivery、CVE Remediation、Immutable Supply Chain、Air-Gapped Delivery、Prometheus/Grafana、SLO/Alerting 與使用教學集中於 Interactive HTML Guide。
@@ -27,6 +27,7 @@
 | **Observability 從 read-only audit views 匯出** | Monitoring 不需要直接寫入 ETL runtime；SQL Exporter → Prometheus → Alertmanager/Grafana 可獨立演進 | Metrics freshness 依賴 audit 資料與 exporter scrape path |
 | **先 deterministic parse / validate，再讓 AI 解釋** | Legacy migration 的 structural truth 與 PASS/FAIL 不依賴模型，可重現、可稽核 | Parser/plugin coverage 需要逐步擴充；未知元件會保守落入 manual review |
 | **ETL truth 與 MCP / RAG / DataOps / Model Gateway 解耦** | 各 repo 維持單一責任，metadata 可被多種 consumer 安全重用 | 需要維護跨服務 contract/version compatibility |
+| **Evidence over feature count** | synthetic ground truth、parser metrics、semantic guardrail、Gateway usage contract 證明品質/成本/失敗語意 | 小型 synthetic corpus 不能代表 production accuracy；live provider benchmark 必須另有 usage evidence |
 
 ### Production Failure & Recovery
 
@@ -51,6 +52,7 @@
 | Pentaho → Hop modernization correctness | `scripts/p1_integration_smoke.sh`, `tests/test_migration_case.py`, `etl_intelligence/migration.py` |
 | Metadata / lineage authority boundary | `etl_intelligence/metadata.py`, `schemas/etl-metadata.schema.json`, `docs/METADATA_LINEAGE.md` |
 | Enterprise AI / access integration boundary | `etl_intelligence/gateway.py`, `docs/PORTFOLIO_INTEGRATION.md` |
+| ETL AI evaluation / production evidence | `evaluation/dataset.json`, `etl_intelligence/evaluation.py`, `tests/test_p2_evaluation.py`, `reports/baseline/` |
 
 ### Interview Questions This Project Can Answer
 
@@ -63,7 +65,47 @@
 - 為什麼 AI 不能當 migration correctness mechanism？
 - structural lineage、deterministic inference 與 AI interpretation 怎麼區分？
 - 為什麼 ETL repo 不自己實作 MCP protocol 與 multi-provider routing？
+- Parser 準確率怎麼用 ground truth 驗證？
+- AI hallucination 如何被 structured evidence guard 攔截？
+- AI / Gateway 掛掉後，為什麼 deterministic metadata 仍可使用？
+- 大量 ETL（例如 243 pipelines）的 request / token / cost 如何依實際 evidence 投影？
+- Raw ETL → LLM 與 Parser → LLM 的比較哪些有實測、哪些不能假裝有 benchmark？
 
+
+### v0.8 — ETL AI Evaluation / Production Evidence
+
+P2 將重點從「AI 還能做什麼」改成「如何證明它有效、可靠、可控」。
+
+~~~text
+Synthetic Ground Truth
+        |
+        v
+Deterministic Parser ------> Precision / Recall / Exact Match
+        |
+        v
+Normalized Evidence
+        |
+        v
+Semantic Analyzer ----------> Grounding / Unsupported Claims
+        |
+        +--------------------> Gateway Usage / Cost / Latency
+        |
+        v
+JSON / Markdown / Interactive HTML
+~~~
+
+目前 repository 內建 **10 組 synthetic cases**，涵蓋 extraction、join、lookup、filter、aggregation、SQL-heavy、multi-pipeline dependency、invalid definition、unsupported component 與 complex parameters。
+
+Evidence：
+
+- `evaluation/dataset.json`
+- `etl_intelligence/evaluation.py`
+- `scripts/evaluate_etl_ai.py`
+- `tests/test_p2_evaluation.py`
+- `reports/baseline/`
+- `docs/ETL_AI_EVALUATION.md`
+
+> Synthetic regression corpus 的 100% exact-match 不是 production accuracy 宣稱。沒有 live Gateway usage/pricing evidence 時，token/cost 明確保留為 `null`。
 
 ### v0.7 — Legacy ETL Modernization + Metadata / Lineage + Enterprise AI Integration
 

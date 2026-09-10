@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 from typing import Any
@@ -26,8 +27,16 @@ class OpenAICompatibleGatewayClient:
         self.api_key = api_key or os.getenv("ETL_AI_GATEWAY_API_KEY")
         self.model = model or os.getenv("ETL_AI_MODEL") or "default"
         self.timeout_seconds = timeout_seconds
+        self._observations: list[dict[str, Any]] = []
         if not self.base_url:
             raise ValueError("ETL_AI_GATEWAY_URL or base_url is required")
+
+    def usage_observations(self) -> list[dict[str, Any]]:
+        """Return Gateway usage/cost evidence without changing the analyzer callable contract."""
+        return copy.deepcopy(self._observations)
+
+    def clear_usage_observations(self) -> None:
+        self._observations.clear()
 
     def __call__(
         self,
@@ -65,6 +74,13 @@ class OpenAICompatibleGatewayClient:
                 body = json.loads(response.read().decode("utf-8"))
         except (error.URLError, TimeoutError, json.JSONDecodeError) as exc:
             raise RuntimeError(f"AI Gateway request failed: {type(exc).__name__}") from exc
+
+        self._observations.append(
+            {
+                "usage": copy.deepcopy(body.get("usage")) if isinstance(body, dict) else None,
+                "gateway": copy.deepcopy(body.get("gateway")) if isinstance(body, dict) else None,
+            }
+        )
 
         try:
             content = body["choices"][0]["message"]["content"]

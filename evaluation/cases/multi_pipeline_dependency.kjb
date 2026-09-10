@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<job><name>eval_multi_pipeline_dependency</name><entries>
+<entry><name>START</name><type>START</type></entry>
+<entry><name>Child A</name><type>TRANS</type><filename>pipelines/child_a.ktr</filename></entry>
+<entry><name>Child B</name><type>TRANS</type><filename>pipelines/child_b.ktr</filename></entry>
+</entries><hops><hop><from>START</from><to>Child A</to><enabled>Y</enabled></hop><hop><from>Child A</from><to>Child B</to><enabled>Y</enabled></hop></hops></job>

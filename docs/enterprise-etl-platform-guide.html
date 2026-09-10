@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Enterprise ETL Platform v0.7.0：ETL Intelligence、GitLab Delivery、Vulnerability Lifecycle、Runtime、Audit、Observability 與 Air-Gapped Delivery">
+<meta name="description" content="Enterprise ETL Platform v0.8.0：ETL Intelligence、GitLab Delivery、Vulnerability Lifecycle、Runtime、Audit、Observability 與 Air-Gapped Delivery">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#08121f">
-<title>Enterprise ETL Platform v0.7.0｜Interactive Project Guide</title>
+<title>Enterprise ETL Platform v0.8.0｜Interactive Project Guide</title>
 <style>
 :root{
   --bg:#08121f;--bg2:#0d1b2c;--panel:#111f32;--panel2:#172a42;--panel3:#1b314d;
@@ -100,10 +100,10 @@ details{border-radius:13px;padding:0 15px;box-shadow:none}details+details{margin
 <div id="progress"></div>
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="brand">● Enterprise ETL Platform <small>v0.7.0</small></div>
+    <div class="brand">● Enterprise ETL Platform <small>v0.8.0</small></div>
     <nav class="nav">
       <a href="#interviewer">面試官速讀</a><a href="#architecture">架構</a><a href="#lifecycle">ETL Flow</a>
-      <a href="#intelligence">ETL Intelligence</a><a href="#modernization">Migration & Lineage</a><a href="#audit">Audit/Retry</a><a href="#delivery">Delivery Security</a><a href="#supply">Supply Chain</a><a href="#observe">Observability</a>
+      <a href="#intelligence">ETL Intelligence</a><a href="#evaluation">Evaluation</a><a href="#modernization">Migration & Lineage</a><a href="#audit">Audit/Retry</a><a href="#delivery">Delivery Security</a><a href="#supply">Supply Chain</a><a href="#observe">Observability</a>
       <a href="#quickstart">使用方式</a><a href="#cicd">CI/Security</a><a href="#versions">版本演進</a>
     </nav>
     <div class="actions">
@@ -122,14 +122,14 @@ details{border-radius:13px;padding:0 15px;box-shadow:none}details+details{margin
     <p class="lead"><strong>繁體中文：</strong>從 Pentaho → Apache Hop legacy modernization、deterministic metadata / lineage 與 evidence-bound semantic intelligence，到 Airflow、Apache Hop、Audit/Retry，再延伸至 GitLab enterprise delivery、CVE remediation、Immutable/Air-Gapped Supply Chain 與 Observability。</p>
     <p class="lead"><strong>English:</strong> A production-oriented ETL platform reference architecture spanning orchestration, execution, auditability, retries, immutable delivery, offline deployment, metrics, SLOs, and alerting.</p>
     <div class="badges">
-      <span class="badge ok">v0.7.0 P1 Integrated</span><span class="badge">ETL Intelligence</span><span class="badge">GitLab CI/CD</span><span class="badge">Apache Airflow</span><span class="badge">Apache Hop 2.19</span>
+      <span class="badge ok">v0.8.0 P2 Evidence</span><span class="badge">ETL Intelligence</span><span class="badge">GitLab CI/CD</span><span class="badge">Apache Airflow</span><span class="badge">Apache Hop 2.19</span>
       <span class="badge">PostgreSQL</span><span class="badge">Docker</span><span class="badge">Trivy</span><span class="badge">CycloneDX</span>
       <span class="badge">Prometheus</span><span class="badge">Grafana</span>
     </div>
     <div class="cta">
       <a class="btn" href="#interviewer">5 分鐘了解專案</a>
       <a class="btn" href="#quickstart">立即使用</a>
-      <a class="btn" href="https://github.com/kewinall/enterprise-etl-platform/releases/tag/v0.7.0">v0.7.0 Release ↗</a>
+      <a class="btn" href="https://github.com/kewinall/enterprise-etl-platform/releases/tag/v0.8.0">v0.8.0 Release ↗</a>
     </div>
   </div>
   <aside class="hero-card">
@@ -143,8 +143,8 @@ details{border-radius:13px;padding:0 15px;box-shadow:none}details+details{margin
 </section>
 
 <div class="stats fade">
-  <div class="stat"><strong>6</strong><span>Engineering maturity versions</span></div>
-  <div class="stat"><strong>3</strong><span>Executable runtime smoke layers</span></div>
+  <div class="stat"><strong>8</strong><span>Engineering maturity versions</span></div>
+  <div class="stat"><strong>10</strong><span>Synthetic ETL AI evaluation cases</span></div>
   <div class="stat"><strong>8</strong><span>ETL Prometheus metrics</span></div>
   <div class="stat"><strong>99%</strong><span>Success SLO baseline</span></div>
   <div class="stat"><strong>4</strong><span>Offline release assets</span></div>
@@ -323,6 +323,28 @@ make p1-integration-smoke</code></pre>
   <div class="callout okbox" style="margin-top:16px">
     <strong>Portfolio story：</strong>Legacy ETL → Understand → Normalize Metadata → Analyze → Modernize → Execute → Observe → Govern。RAG 使用文件與 generated descriptions；DataOps Copilot 透過 MCP 取得 evidence，但 Incident RCA 仍屬於 DataOps responsibility。
   </div>
+</section>
+
+
+<section id="evaluation" class="fade">
+  <div class="head"><div><div class="eyebrow">P2 · Evaluation Evidence</div><h2>ETL AI：不是只展示 Feature，而是展示 Evidence</h2></div><p>Parser accuracy、AI grounding、hallucination guard、failure semantics、cost/token/latency 與 repeatability 都能重跑。</p></div>
+  <div class="g3 grid">
+    <div class="card"><div class="icon">10</div><h3>Synthetic Ground Truth</h3><p>10 cases 涵蓋 extraction、join、lookup、filter、aggregation、SQL-heavy、dependency、invalid、unsupported component、complex parameters。</p></div>
+    <div class="card"><div class="icon">D</div><h3>Deterministic Metrics</h3><p>precision / recall / F1 / exact match 與 expected-vs-unexpected parsing failure 都由 repository dataset 計算。</p></div>
+    <div class="card"><div class="icon">AI</div><h3>Semantic Guardrail</h3><p>AI 必須引用 parser evidence；unknown source/target/SQL/dependency 被 reject。AI failure 不破壞 deterministic metadata。</p></div>
+  </div>
+  <div class="tw" style="margin-top:16px"><table>
+    <thead><tr><th>Question</th><th>Evidence</th><th>Boundary</th></tr></thead>
+    <tbody>
+      <tr><td>Parser 準不準？</td><td><code>evaluation/dataset.json</code> + <code>tests/test_p2_evaluation.py</code></td><td>Small synthetic regression corpus；不是 production universe accuracy</td></tr>
+      <tr><td>AI 會不會 hallucinate？</td><td>evidence refs + source/target/dependency/SQL validation</td><td>Structured unsupported-claim detector；不是通用 natural-language fact checker</td></tr>
+      <tr><td>AI 掛掉怎麼辦？</td><td>validation retry / deterministic fallback regression</td><td>Provider timeout / 429 / fallback 由 Multi-LLM AI Gateway 負責</td></tr>
+      <tr><td>243 pipelines 成本？</td><td>per-pipeline → batch → provider/model → 243 projection</td><td>沒有 Gateway usage/pricing 時 cost = <code>null</code></td></tr>
+      <tr><td>Raw ETL vs Parser → LLM？</td><td>raw bytes、structured-context bytes、repeatability、truth preservation</td><td>CI 不假裝有 raw-provider token benchmark</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout warnbox" style="margin-top:16px"><strong>Interpretation：</strong>即使 synthetic regression corpus 達到 100% exact-match，也只代表這 10 組 checked-in ground truth；不代表真實 production ETL 或任何 LLM provider 的 100% accuracy。</div>
+  <div class="cta"><a class="btn" href="https://github.com/kewinall/enterprise-etl-platform/blob/main/docs/ETL_AI_EVALUATION.md">Evaluation Design ↗</a><a class="btn" href="https://github.com/kewinall/enterprise-etl-platform/tree/main/reports/baseline">Baseline Evidence ↗</a></div>
 </section>
 
 <section id="audit" class="fade">

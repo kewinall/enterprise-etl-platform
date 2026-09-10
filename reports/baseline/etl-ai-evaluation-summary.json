@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "scope": "synthetic-regression-corpus",
+  "dataset_cases": 10,
+  "valid_parser_cases": 9,
+  "expected_parse_failures": 1,
+  "parser": {
+    "structural_case_exact_match_rate": 1,
+    "observed_parsing_failure_rate": 0.1,
+    "unexpected_parsing_failure_rate": 0,
+    "metric_policy": "precision/recall/exact-match are recalculated from evaluation/dataset.json"
+  },
+  "semantic": {
+    "evaluated_cases": 9,
+    "structured_output_validity": 1,
+    "factual_consistency": 1,
+    "grounding": 1,
+    "completeness": 1,
+    "unsupported_claim_count": 0,
+    "parser_truth_preservation_rate": 1,
+    "benchmark_type": "synthetic semantic-contract validation, not provider/model quality benchmark"
+  },
+  "usage": {
+    "input_tokens": null,
+    "output_tokens": null,
+    "estimated_cost_usd": null,
+    "reason": "No live Multi-LLM AI Gateway usage/pricing evidence in checked-in baseline"
+  },
+  "warning": "A perfect score on this small synthetic regression corpus is not a production accuracy claim."
+}

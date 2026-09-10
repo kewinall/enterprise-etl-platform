@@ -1,0 +1,40 @@
+{
+  "pipeline": {
+    "name": "eval_lookup"
+  },
+  "steps": [
+    {
+      "id": "orders",
+      "name": "Read Orders",
+      "type": "TableInput",
+      "role": "source",
+      "table": "staging.orders"
+    },
+    {
+      "id": "lookup",
+      "name": "Lookup Segment",
+      "type": "DatabaseLookup",
+      "role": "referenced",
+      "table": "master.customer_segment"
+    },
+    {
+      "id": "write",
+      "name": "Write Segmented",
+      "type": "TableOutput",
+      "role": "target",
+      "table": "analytics.segmented_orders"
+    }
+  ],
+  "hops": [
+    {
+      "from": "Read Orders",
+      "to": "Lookup Segment",
+      "enabled": true
+    },
+    {
+      "from": "Lookup Segment",
+      "to": "Write Segmented",
+      "enabled": true
+    }
+  ]
+}
