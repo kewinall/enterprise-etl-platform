@@ -1,0 +1,38 @@
+{
+  "pipeline": {
+    "name": "eval_filter"
+  },
+  "steps": [
+    {
+      "id": "read",
+      "name": "Read Events",
+      "type": "TableInput",
+      "role": "source",
+      "table": "staging.events"
+    },
+    {
+      "id": "filter",
+      "name": "Filter Ready",
+      "type": "FilterRows"
+    },
+    {
+      "id": "write",
+      "name": "Write Ready",
+      "type": "TableOutput",
+      "role": "target",
+      "table": "analytics.ready_events"
+    }
+  ],
+  "hops": [
+    {
+      "from": "Read Events",
+      "to": "Filter Ready",
+      "enabled": true
+    },
+    {
+      "from": "Filter Ready",
+      "to": "Write Ready",
+      "enabled": true
+    }
+  ]
+}

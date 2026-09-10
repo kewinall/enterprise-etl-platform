@@ -1,0 +1,38 @@
+{
+  "pipeline": {
+    "name": "eval_aggregation"
+  },
+  "steps": [
+    {
+      "id": "read",
+      "name": "Read Sales",
+      "type": "TableInput",
+      "role": "source",
+      "table": "staging.sales"
+    },
+    {
+      "id": "group",
+      "name": "Aggregate Daily",
+      "type": "GroupBy"
+    },
+    {
+      "id": "write",
+      "name": "Write Daily",
+      "type": "TableOutput",
+      "role": "target",
+      "table": "analytics.daily_sales"
+    }
+  ],
+  "hops": [
+    {
+      "from": "Read Sales",
+      "to": "Aggregate Daily",
+      "enabled": true
+    },
+    {
+      "from": "Aggregate Daily",
+      "to": "Write Daily",
+      "enabled": true
+    }
+  ]
+}

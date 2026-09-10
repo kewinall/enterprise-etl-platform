@@ -1,0 +1,30 @@
+{
+  "pipeline": {
+    "name": "eval_simple_extraction"
+  },
+  "steps": [
+    {
+      "id": "read",
+      "name": "Read Orders",
+      "type": "TableInput",
+      "role": "source",
+      "connection": "source-db",
+      "table": "staging.orders"
+    },
+    {
+      "id": "write",
+      "name": "Write Orders",
+      "type": "TableOutput",
+      "role": "target",
+      "connection": "target-db",
+      "table": "analytics.orders"
+    }
+  ],
+  "hops": [
+    {
+      "from": "Read Orders",
+      "to": "Write Orders",
+      "enabled": true
+    }
+  ]
+}

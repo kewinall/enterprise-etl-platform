@@ -1,0 +1,50 @@
+{
+  "pipeline": {
+    "name": "eval_join"
+  },
+  "steps": [
+    {
+      "id": "orders",
+      "name": "Read Orders",
+      "type": "TableInput",
+      "role": "source",
+      "table": "staging.orders"
+    },
+    {
+      "id": "customers",
+      "name": "Read Customers",
+      "type": "TableInput",
+      "role": "source",
+      "table": "master.customers"
+    },
+    {
+      "id": "join",
+      "name": "Join Customer",
+      "type": "JoinRows"
+    },
+    {
+      "id": "write",
+      "name": "Write Enriched",
+      "type": "TableOutput",
+      "role": "target",
+      "table": "analytics.order_customer"
+    }
+  ],
+  "hops": [
+    {
+      "from": "Read Orders",
+      "to": "Join Customer",
+      "enabled": true
+    },
+    {
+      "from": "Read Customers",
+      "to": "Join Customer",
+      "enabled": true
+    },
+    {
+      "from": "Join Customer",
+      "to": "Write Enriched",
+      "enabled": true
+    }
+  ]
+}

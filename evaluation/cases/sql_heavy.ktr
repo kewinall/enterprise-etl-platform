@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<transformation><info><name>eval_sql_heavy</name></info>
+<step><name>Read Joined Facts</name><type>TableInput</type><connection>warehouse</connection><sql>SELECT o.order_id, c.segment FROM staging.orders o JOIN master.customers c ON o.customer_id = c.customer_id WHERE o.status = 'READY'</sql></step>
+<step><name>Write Joined Facts</name><type>TableOutput</type><connection>warehouse</connection><schema>analytics</schema><table>joined_orders</table></step>
+<order><hop><from>Read Joined Facts</from><to>Write Joined Facts</to><enabled>Y</enabled></hop></order></transformation>

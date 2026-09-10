@@ -1,0 +1,376 @@
+{
+  "schema_version": "1.0",
+  "description": "Synthetic/generic ETL evaluation corpus. No customer or production data.",
+  "supported_step_types": [
+    "TableInput",
+    "TableOutput",
+    "JoinRows",
+    "DatabaseLookup",
+    "FilterRows",
+    "GroupBy",
+    "START",
+    "TRANS",
+    "GetVariable",
+    "RowGenerator",
+    "Sequence",
+    "Update",
+    "SelectValues",
+    "Calculator"
+  ],
+  "cases": [
+    {
+      "id": "simple_extraction",
+      "category": "simple extraction",
+      "artifact": "cases/simple_extraction.json",
+      "truth": {
+        "steps": [
+          "Read Orders",
+          "Write Orders"
+        ],
+        "sources": [
+          "staging.orders"
+        ],
+        "targets": [
+          "analytics.orders"
+        ],
+        "dependencies": [
+          {
+            "kind": "step",
+            "from": "Read Orders",
+            "to": "Write Orders"
+          }
+        ],
+        "sql": [],
+        "tables": [
+          "staging.orders",
+          "analytics.orders"
+        ],
+        "parameters": [],
+        "variables": [],
+        "unsupported_components": []
+      }
+    },
+    {
+      "id": "join",
+      "category": "join",
+      "artifact": "cases/join.json",
+      "truth": {
+        "steps": [
+          "Read Orders",
+          "Read Customers",
+          "Join Customer",
+          "Write Enriched"
+        ],
+        "sources": [
+          "staging.orders",
+          "master.customers"
+        ],
+        "targets": [
+          "analytics.order_customer"
+        ],
+        "dependencies": [
+          {
+            "kind": "step",
+            "from": "Read Orders",
+            "to": "Join Customer"
+          },
+          {
+            "kind": "step",
+            "from": "Read Customers",
+            "to": "Join Customer"
+          },
+          {
+            "kind": "step",
+            "from": "Join Customer",
+            "to": "Write Enriched"
+          }
+        ],
+        "sql": [],
+        "tables": [
+          "staging.orders",
+          "master.customers",
+          "analytics.order_customer"
+        ],
+        "parameters": [],
+        "variables": [],
+        "unsupported_components": []
+      }
+    },
+    {
+      "id": "lookup",
+      "category": "lookup",
+      "artifact": "cases/lookup.json",
+      "truth": {
+        "steps": [
+          "Read Orders",
+          "Lookup Segment",
+          "Write Segmented"
+        ],
+        "sources": [
+          "staging.orders"
+        ],
+        "targets": [
+          "analytics.segmented_orders"
+        ],
+        "dependencies": [
+          {
+            "kind": "step",
+            "from": "Read Orders",
+            "to": "Lookup Segment"
+          },
+          {
+            "kind": "step",
+            "from": "Lookup Segment",
+            "to": "Write Segmented"
+          }
+        ],
+        "sql": [],
+        "tables": [
+          "staging.orders",
+          "master.customer_segment",
+          "analytics.segmented_orders"
+        ],
+        "parameters": [],
+        "variables": [],
+        "unsupported_components": []
+      }
+    },
+    {
+      "id": "filter",
+      "category": "filter",
+      "artifact": "cases/filter.json",
+      "truth": {
+        "steps": [
+          "Read Events",
+          "Filter Ready",
+          "Write Ready"
+        ],
+        "sources": [
+          "staging.events"
+        ],
+        "targets": [
+          "analytics.ready_events"
+        ],
+        "dependencies": [
+          {
+            "kind": "step",
+            "from": "Read Events",
+            "to": "Filter Ready"
+          },
+          {
+            "kind": "step",
+            "from": "Filter Ready",
+            "to": "Write Ready"
+          }
+        ],
+        "sql": [],
+        "tables": [
+          "staging.events",
+          "analytics.ready_events"
+        ],
+        "parameters": [],
+        "variables": [],
+        "unsupported_components": []
+      }
+    },
+    {
+      "id": "aggregation",
+      "category": "aggregation",
+      "artifact": "cases/aggregation.json",
+      "truth": {
+        "steps": [
+          "Read Sales",
+          "Aggregate Daily",
+          "Write Daily"
+        ],
+        "sources": [
+          "staging.sales"
+        ],
+        "targets": [
+          "analytics.daily_sales"
+        ],
+        "dependencies": [
+          {
+            "kind": "step",
+            "from": "Read Sales",
+            "to": "Aggregate Daily"
+          },
+          {
+            "kind": "step",
+            "from": "Aggregate Daily",
+            "to": "Write Daily"
+          }
+        ],
+        "sql": [],
+        "tables": [
+          "staging.sales",
+          "analytics.daily_sales"
+        ],
+        "parameters": [],
+        "variables": [],
+        "unsupported_components": []
+      }
+    },
+    {
+      "id": "sql_heavy",
+      "category": "SQL-heavy transformation",
+      "artifact": "cases/sql_heavy.ktr",
+      "truth": {
+        "steps": [
+          "Read Joined Facts",
+          "Write Joined Facts"
+        ],
+        "sources": [
+          "staging.orders",
+          "master.customers"
+        ],
+        "targets": [
+          "analytics.joined_orders"
+        ],
+        "dependencies": [
+          {
+            "kind": "step",
+            "from": "Read Joined Facts",
+            "to": "Write Joined Facts"
+          }
+        ],
+        "sql": [
+          "SELECT o.order_id, c.segment FROM staging.orders o JOIN master.customers c ON o.customer_id = c.customer_id WHERE o.status = 'READY'"
+        ],
+        "tables": [
+          "staging.orders",
+          "master.customers",
+          "analytics.joined_orders"
+        ],
+        "parameters": [],
+        "variables": [],
+        "unsupported_components": []
+      }
+    },
+    {
+      "id": "multi_pipeline_dependency",
+      "category": "multi-pipeline dependency",
+      "artifact": "cases/multi_pipeline_dependency.kjb",
+      "truth": {
+        "steps": [
+          "START",
+          "Child A",
+          "Child B"
+        ],
+        "sources": [],
+        "targets": [],
+        "dependencies": [
+          {
+            "kind": "pipeline",
+            "from": "eval_multi_pipeline_dependency",
+            "to": "pipelines/child_a.ktr"
+          },
+          {
+            "kind": "pipeline",
+            "from": "eval_multi_pipeline_dependency",
+            "to": "pipelines/child_b.ktr"
+          },
+          {
+            "kind": "step",
+            "from": "START",
+            "to": "Child A"
+          },
+          {
+            "kind": "step",
+            "from": "Child A",
+            "to": "Child B"
+          }
+        ],
+        "sql": [],
+        "tables": [],
+        "parameters": [],
+        "variables": [],
+        "unsupported_components": []
+      }
+    },
+    {
+      "id": "invalid_partial",
+      "category": "invalid / partial ETL definition",
+      "artifact": "cases/invalid_partial.json",
+      "expect_parse_failure": true,
+      "truth": {}
+    },
+    {
+      "id": "unsupported_component",
+      "category": "unsupported component",
+      "artifact": "cases/unsupported_component.json",
+      "truth": {
+        "steps": [
+          "Read Input",
+          "Vendor Transform",
+          "Write Output"
+        ],
+        "sources": [
+          "staging.plugin_input"
+        ],
+        "targets": [
+          "analytics.plugin_output"
+        ],
+        "dependencies": [
+          {
+            "kind": "step",
+            "from": "Read Input",
+            "to": "Vendor Transform"
+          },
+          {
+            "kind": "step",
+            "from": "Vendor Transform",
+            "to": "Write Output"
+          }
+        ],
+        "sql": [],
+        "tables": [
+          "staging.plugin_input",
+          "analytics.plugin_output"
+        ],
+        "parameters": [],
+        "variables": [],
+        "unsupported_components": [
+          "OpaqueVendorPlugin"
+        ]
+      }
+    },
+    {
+      "id": "complex_parameters",
+      "category": "complex parameter usage",
+      "artifact": "cases/complex_parameters.hpl",
+      "truth": {
+        "steps": [
+          "Read Parameterized",
+          "Write Snapshot"
+        ],
+        "sources": [
+          "${TARGET_SCHEMA}.orders"
+        ],
+        "targets": [
+          "analytics.orders_snapshot"
+        ],
+        "dependencies": [
+          {
+            "kind": "step",
+            "from": "Read Parameterized",
+            "to": "Write Snapshot"
+          }
+        ],
+        "sql": [],
+        "tables": [
+          "${TARGET_SCHEMA}.orders",
+          "analytics.orders_snapshot"
+        ],
+        "parameters": [
+          "RUN_DATE",
+          "TARGET_SCHEMA"
+        ],
+        "variables": [
+          "LOAD_MODE"
+        ],
+        "unsupported_components": []
+      }
+    }
+  ]
+}

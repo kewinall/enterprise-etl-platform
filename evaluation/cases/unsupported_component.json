@@ -1,0 +1,38 @@
+{
+  "pipeline": {
+    "name": "eval_unsupported_component"
+  },
+  "steps": [
+    {
+      "id": "read",
+      "name": "Read Input",
+      "type": "TableInput",
+      "role": "source",
+      "table": "staging.plugin_input"
+    },
+    {
+      "id": "opaque",
+      "name": "Vendor Transform",
+      "type": "OpaqueVendorPlugin"
+    },
+    {
+      "id": "write",
+      "name": "Write Output",
+      "type": "TableOutput",
+      "role": "target",
+      "table": "analytics.plugin_output"
+    }
+  ],
+  "hops": [
+    {
+      "from": "Read Input",
+      "to": "Vendor Transform",
+      "enabled": true
+    },
+    {
+      "from": "Vendor Transform",
+      "to": "Write Output",
+      "enabled": true
+    }
+  ]
+}
