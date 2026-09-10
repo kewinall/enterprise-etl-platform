@@ -147,6 +147,24 @@ def validate_ai_result(result: dict[str, Any], metadata: dict[str, Any]) -> dict
         if sql_id not in allowed_sql:
             raise ValueError(f"AI result references unknown sql_id: {sql_id}")
 
+    allowed_sources = {
+        str(item.get("name"))
+        for item in metadata.get("sources", [])
+        if item.get("name")
+    }
+    allowed_targets = {
+        str(item.get("name"))
+        for item in metadata.get("targets", [])
+        if item.get("name")
+    }
+    for item in result.get("source_target_interpretation", []):
+        source = str(item.get("source") or "")
+        target = str(item.get("target") or "")
+        if source not in allowed_sources:
+            raise ValueError(f"AI result references unknown source: {source}")
+        if target not in allowed_targets:
+            raise ValueError(f"AI result references unknown target: {target}")
+
     allowed_nodes = {
         str(item.get("name"))
         for item in metadata.get("steps", [])
@@ -229,9 +247,11 @@ class SemanticAnalyzer:
         self,
         ai_client: Callable[[str, str], str | dict[str, Any]] | None = None,
         provider_name: str = "injected-client",
+        max_validation_attempts: int = 2,
     ) -> None:
         self.ai_client = ai_client
         self.provider_name = provider_name
+        self.max_validation_attempts = max(1, int(max_validation_attempts))
 
     def analyze(self, metadata: dict[str, Any]) -> dict[str, Any]:
         if self.ai_client is None:
@@ -259,20 +279,33 @@ class SemanticAnalyzer:
             "normalized_metadata": context,
         }
 
-        try:
-            raw = self.ai_client(
-                SYSTEM_PROMPT,
-                json.dumps(request, ensure_ascii=False, sort_keys=True),
-            )
-            if isinstance(raw, str):
-                parsed = json.loads(_strip_code_fence(raw))
-            elif isinstance(raw, dict):
-                parsed = copy.deepcopy(raw)
-            else:
-                raise ValueError("AI client returned unsupported response type")
-            validated = validate_ai_result(parsed, metadata)
-        except Exception as exc:
-            return deterministic_fallback(metadata, str(exc))
+        attempts = 0
+        for attempt in range(1, self.max_validation_attempts + 1):
+            attempts = attempt
+            try:
+                raw = self.ai_client(
+                    SYSTEM_PROMPT,
+                    json.dumps(request, ensure_ascii=False, sort_keys=True),
+                )
+                if isinstance(raw, str):
+                    parsed = json.loads(_strip_code_fence(raw))
+                elif isinstance(raw, dict):
+                    parsed = copy.deepcopy(raw)
+                else:
+                    raise ValueError("AI client returned unsupported response type")
+                validated = validate_ai_result(parsed, metadata)
+                break
+            except RuntimeError as exc:
+                fallback = deterministic_fallback(metadata, str(exc))
+                fallback["provenance"]["ai_attempts"] = attempts
+                fallback["provenance"]["retry_count"] = max(0, attempts - 1)
+                return fallback
+            except Exception as exc:
+                if attempt >= self.max_validation_attempts:
+                    fallback = deterministic_fallback(metadata, str(exc))
+                    fallback["provenance"]["ai_attempts"] = attempts
+                    fallback["provenance"]["retry_count"] = max(0, attempts - 1)
+                    return fallback
 
         validated["schema_version"] = "1.0"
         validated["analysis_mode"] = "ai"
@@ -281,5 +314,7 @@ class SemanticAnalyzer:
             "ai_provider": self.provider_name,
             "parser_truth_preserved": True,
             "context_redacted": True,
+            "ai_attempts": attempts,
+            "retry_count": max(0, attempts - 1),
         }
         return validated
