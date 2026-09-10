@@ -38,9 +38,17 @@
 - Multi-LLM AI Gateway semantic-analysis path
 - explicit column-level lineage capability boundary
 
+### v0.8 — ETL AI Evaluation / Production Evidence ✅
+- 10-case synthetic evaluation corpus + deterministic ground truth
+- parser accuracy / failure metrics
+- AI grounding / unsupported-claim / structured-output evaluation
+- Gateway usage / cost / latency evidence consumption
+- failure semantics / repeatability / ablation
+- JSON / Markdown / Interactive HTML report + CI artifact
+
 ### 後續版本
 
-v0.8 僅在能增加新的 production evidence 時考慮，例如 dialect-aware column lineage、large migration corpus、HA/DR exercise；不為版本號而堆疊與相鄰 Repository 重複的能力。
+後續版本只在能增加新的 production evidence 時考慮，例如 dialect-aware column lineage、larger migration corpus、HA/DR exercise；不為版本號而堆疊與相鄰 Repository 重複的能力。
 
 ## English
 
@@ -53,5 +61,9 @@ v0.6 adds deterministic design-time ETL parsing, normalized provenance/evidence,
 ### v0.7 — Legacy ETL Modernization + Metadata / Lineage + Enterprise AI Integration ✅
 
 v0.7 adds a public synthetic Pentaho-to-Hop modernization case, normalized metadata v1.1, explicit lineage classifications, deterministic migration planning/validation, MCP controlled access, RAG/DataOps reference integration, and a Multi-LLM AI Gateway semantic path.
+
+### v0.8 — ETL AI Evaluation / Production Evidence ✅
+
+v0.8 adds a repository-owned synthetic evaluation corpus, deterministic parser metrics, evidence-bound semantic evaluation, explicit failure semantics, Gateway usage/cost integration, repeatability/ablation evidence, and CI-generated reports.
 
 Future work remains optional and must add new production evidence rather than duplicate adjacent repositories.
