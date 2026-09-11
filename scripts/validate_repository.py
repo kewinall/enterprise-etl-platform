@@ -28,6 +28,14 @@ REQUIRED_DOCS = [
     "docs/ETL_AI_EVALUATION.md",
     "reports/README.md",
 ]
+
+# Public README files are intentionally Traditional Chinese first, with English
+# technical terminology preserved. Engineering reference documents keep the
+# existing bilingual marker policy until they are migrated separately.
+BILINGUAL_DOCS = [
+    rel for rel in REQUIRED_DOCS if rel != "README.md"
+]
+
 REQUIRED_IMPLEMENTATION = [
     ".gitlab-ci.yml",
     "etl_intelligence/parser.py",
@@ -76,8 +84,11 @@ def main() -> int:
         path = ROOT / rel
         if not path.exists():
             errors.append(f"missing required document: {rel}")
-            continue
-        validate_bilingual(path, errors)
+
+    for rel in BILINGUAL_DOCS:
+        path = ROOT / rel
+        if path.exists():
+            validate_bilingual(path, errors)
 
     for rel in REQUIRED_IMPLEMENTATION:
         if not (ROOT / rel).exists():
